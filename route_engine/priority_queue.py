@@ -19,6 +19,9 @@ class PriorityQueue:
         self._heap = list()
         heapify(self._heap)
 
+    def __len__(self):
+        return self._heap.__len__()
+
     def push(self, item, priority):
         """
         Inserts an item on to the queue while maintaining priority order.

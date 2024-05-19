@@ -11,9 +11,8 @@ class TestPriorityQueue(TestCase):
         for item in items:
             queue.push(item, priority=item)
 
-        popped_items = [
-            queue.pop()
-            for _ in range(len(items))
-        ]
+        popped_items = list()
+        while queue:
+            popped_items.append(queue.pop())
 
         self.assertListEqual(popped_items, sorted(items))
