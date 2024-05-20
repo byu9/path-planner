@@ -1,5 +1,5 @@
 from unittest import TestCase
-from ..priority_queue import PriorityQueue
+from route_engine.priority_queue import PriorityQueue
 
 
 class TestPriorityQueue(TestCase):
