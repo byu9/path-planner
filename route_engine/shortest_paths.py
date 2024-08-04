@@ -1,73 +1,103 @@
 from math import inf
 
-from .graphs import MultiDiGraph
+
+class _SingleSourceShortestPathResult:
+    def __init__(self, src_node, segments, distances):
+        self._src_node = src_node
+        self._segments = segments
+        self._distances = distances
+
+    def _scan_segments(self, dst_node):
+        path = list()
+
+        node = dst_node
+        while node != self._src_node:
+            segment = self._segments[node]
+            path.append(segment)
+            node, _, _ = segment
+
+        path.reverse()
+        return path
+
+    def _scan_waypoints(self, dst_node):
+        waypoints = list()
+
+        node = dst_node
+        waypoints.append(node)
+
+        while node != self._src_node:
+            segment = self._segments[node]
+            node, _, _ = segment
+            waypoints.append(node)
+
+        waypoints.reverse()
+        return waypoints
+
+    def distance_to(self, dst_node):
+        return self._distances[dst_node]
+
+    def path_to(self, dst_node):
+        return self._scan_segments(dst_node)
+
+    def waypoints_to(self, dst_node):
+        return self._scan_waypoints(dst_node)
 
 
-def _compute_full_path(dst, src, parent_edges):
-    path = list()
+class DijkstraShortestPath:
+    def __init__(self, graph):
+        self._graph = graph
 
-    node = dst
-    while node != src:
-        parent_edge = parent_edges[node]
-        path.append(parent_edge)
-        node, _, _ = parent_edge
+    def _length(self, edge):
+        length = self._graph.edge_data(*edge)['length']
 
-    path.reverse()
-    return path
+        if not length >= 0:
+            raise ValueError(f'Edge "{edge}" has negative length "{length}".')
 
+        return length
 
-def _get_distance(graph, edge):
-    distance = graph.edge_data(edge)['distance']
-    return distance
+    def _edge_between(self, src_node, dst_node):
+        parallel_edges = (
+            (edge_src, edge_dst, edge_key)
+            for edge_src, edge_dst, edge_key in self._graph.edges
+            if (edge_src == src_node) and (edge_dst == dst_node)
+        )
 
+        shortest_edge = min(parallel_edges, key=self._length)
+        return shortest_edge
 
-def dijkstra(graph: MultiDiGraph, src, dst=None, distance_func=_get_distance):
-    distances = {
-        node: 0.0 if node == src else inf
-        for node in graph.nodes
-    }
+    def solve(self, src_node):
+        # Stores the optimal distance from the source node terminating at a
+        # certain destination node.
+        distances = {node: inf for node in self._graph.nodes}
+        distances[src_node] = 0.0
 
-    # Parent of a node in the shortest path starting from src
-    parent_edges = dict()
+        # Stores the last edge segment of the shortest path from the source
+        # node terminating at a certain destination node
+        segments = dict()
 
-    unvisited_nodes = set(graph.nodes)
-    while unvisited_nodes:
+        unexplored_nodes = set(self._graph.nodes)
+        while unexplored_nodes:
 
-        # Evict the closest node from unvisited nodes
-        closest = min(unvisited_nodes, key=distances.get)
-        unvisited_nodes.remove(closest)
+            # Evicts a node closest to the source to explore.
+            # Previously explored nodes are never explored again because they would have a shorter
+            # distance than the node currently being explored and all its children.
+            closest = min(unexplored_nodes, key=distances.get)
+            unexplored_nodes.remove(closest)
 
-        # For each unvisited child of the closest node, update the path if traveling to
-        # that child via the closest node results in a smaller distance.
-        for child in graph.children_of(closest):
-            if child in unvisited_nodes:
+            # For each unexplored child, update the path if traveling through the current node
+            # to that child results in a smaller distance than previously recorded.
+            for child in self._graph.children_of(closest):
+                if child in unexplored_nodes:
+                    edge = self._edge_between(src_node=closest, dst_node=child)
+                    if edge is not None:
+                        new_distance = distances[closest] + self._length(edge)
 
-                # Select one of the edges if there are multiple parallel edges
-                selected_edge = min(graph.edges_between(closest, child),
-                                    key=lambda edge: distance_func(graph, edge))
+                        if new_distance < distances[child]:
+                            distances[child] = new_distance
+                            segments[child] = edge
 
-                selected_edge_distance = distance_func(graph, selected_edge)
-
-                if not selected_edge_distance >= 0:
-                    raise ValueError(
-                        f'Edge {selected_edge} has a negative distance of '
-                        f'{selected_edge_distance}.'
-                    )
-
-                new_distance = distances[closest] + selected_edge_distance
-
-                if new_distance < distances[child]:
-                    distances[child] = new_distance
-                    parent_edges[child] = selected_edge
-
-    shortest_paths = {
-        node: _compute_full_path(node, src, parent_edges)
-        for node in graph.nodes
-        if node != src
-    }
-
-    if dst is None:
-        return shortest_paths, distances
-
-    else:
-        return shortest_paths[dst], distances[dst]
+        return _SingleSourceShortestPathResult(
+            src_node=src_node,
+            segments=segments,
+            distances=distances,
+        )
