@@ -36,11 +36,11 @@ class MultiDiGraph:
         return self._node_data[node]
 
     def insert_edge(self, src_node, dst_node, edge_key):
-        if src_node not in self._node_data:
-            raise ValueError(f'Source node "{src_node}" does not exist.')
+        if src_node not in self.nodes:
+            self.insert_node(src_node)
 
-        if dst_node not in self._node_data:
-            raise ValueError(f'Destination node "{dst_node}" does not exist.')
+        if dst_node not in self.nodes:
+            self.insert_node(dst_node)
 
         if (src_node, dst_node) in self._edge_data:
             if edge_key in self._edge_data[src_node, dst_node]:
