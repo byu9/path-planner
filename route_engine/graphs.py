@@ -1,69 +1,69 @@
-class MultiDiGraph:
+def _must_be_non_negative(val):
+    if not val >= 0:
+        raise ValueError(f'Value {val} is not non-negative.')
+
+
+class DiGraph:
     def __init__(self):
-        self._node_data = dict()
-        self._edge_data = dict()
+        self._nodes = dict()
+        self._edge_weights = dict()
         self._node_children = dict()
         self._node_parents = dict()
 
-    def insert_node(self, node):
-        if node in self._node_data:
+    def _node_must_exist(self, node):
+        if node not in self._nodes:
+            raise ValueError(f'Node "{node}" does not exist.')
+
+    def _node_must_not_exist(self, node):
+        if node in self._nodes:
             raise ValueError(f'Node "{node}" exists.')
 
-        self._node_data[node] = dict()
-        self._node_children[node] = set()
-        self._node_parents[node] = set()
+    def _edge_must_exist(self, edge):
+        if edge not in self._edge_weights:
+            raise ValueError(f'Edge "{edge}" does not exist.')
+
+    def _edge_must_not_exist(self, edge):
+        if edge in self._edge_weights:
+            raise ValueError(f'Edge "{edge}" exists.')
+
+    def _check_insert_node(self, node):
+        if node not in self._nodes:
+            self._nodes[node] = dict()
+            self._node_children[node] = set()
+            self._node_parents[node] = set()
 
     @property
     def nodes(self):
-        yield from self._node_data.keys()
+        return self._nodes.keys()
 
     def children_of(self, node):
-        if node not in self._node_children:
-            raise LookupError(f'Node "{node}" does not exist.')
-
-        yield from self._node_children[node]
+        self._node_must_exist(node)
+        return self._node_children[node]
 
     def parents_of(self, node):
-        if node not in self._node_parents:
-            raise LookupError(f'Node "{node}" does not exist.')
-
-        yield from self._node_parents[node]
+        self._node_must_exist(node)
+        return self._node_parents[node]
 
     def node_data(self, node):
-        if node not in self._node_data:
-            raise LookupError(f'Node "{node}" does not exist.')
+        self._node_must_exist(node)
+        return self._nodes[node]
 
-        return self._node_data[node]
+    def insert_edge(self, src_node, dst_node, weight):
+        edge = src_node, dst_node
+        self._edge_must_not_exist(edge)
+        _must_be_non_negative(weight)
 
-    def insert_edge(self, src_node, dst_node, edge_key):
-        if src_node not in self.nodes:
-            self.insert_node(src_node)
+        self._check_insert_node(src_node)
+        self._check_insert_node(dst_node)
 
-        if dst_node not in self.nodes:
-            self.insert_node(dst_node)
-
-        if (src_node, dst_node) in self._edge_data:
-            if edge_key in self._edge_data[src_node, dst_node]:
-                raise ValueError(f'Edge "({src_node}, {dst_node}, {edge_key})" exists.')
-
-            else:
-                self._edge_data[src_node, dst_node][edge_key] = dict()
-
-        else:
-            self._edge_data[src_node, dst_node] = {edge_key: dict()}
-
+        self._edge_weights[edge] = weight
         self._node_children[src_node].add(dst_node)
         self._node_parents[dst_node].add(src_node)
 
     @property
     def edges(self):
-        for (src_node, dst_node), data_dicts in self._edge_data.items():
-            for edge_key in data_dicts.keys():
-                yield src_node, dst_node, edge_key
+        return self._edge_weights.keys()
 
-    def edge_data(self, src_node, dst_node, edge_key):
-        if (src_node, dst_node) in self._edge_data:
-            if edge_key in self._edge_data[src_node, dst_node]:
-                return self._edge_data[src_node, dst_node][edge_key]
-
-        raise ValueError(f'Edge "({src_node}, {dst_node}, {edge_key})" does not exist.')
+    def weight_of(self, edge):
+        self._edge_must_exist(edge)
+        return self._edge_weights[edge]
