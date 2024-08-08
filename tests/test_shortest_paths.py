@@ -14,93 +14,93 @@ class TestDijkstra(unittest.TestCase):
 
     def test1(self):
         src_node, dst_node = 69, 40
-        expected_waypoints = [69, 75, 83, 23, 9, 22, 40]
+        expected_path = [69, 75, 83, 23, 9, 22, 40]
         expected_distance = 81
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test2(self):
         src_node, dst_node = 10, 41
-        expected_waypoints = [10, 98, 94, 45, 41]
+        expected_path = [10, 98, 94, 45, 41]
         expected_distance = 44
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test3(self):
         src_node, dst_node = 98, 37
-        expected_waypoints = [98, 87, 70, 26, 19, 92, 27, 65, 37]
+        expected_path = [98, 87, 70, 26, 19, 92, 27, 65, 37]
         expected_distance = 54
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test4(self):
         src_node, dst_node = 88, 90
-        expected_waypoints = [88, 90]
+        expected_path = [88, 90]
         expected_distance = 15
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test5(self):
         src_node, dst_node = 30, 55
-        expected_waypoints = [30, 18, 48, 72, 97, 55]
+        expected_path = [30, 18, 48, 72, 97, 55]
         expected_distance = 85
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test6(self):
         src_node, dst_node = 32, 29
-        expected_waypoints = [32, 95, 80, 34, 68, 29]
+        expected_path = [32, 95, 80, 34, 68, 29]
         expected_distance = 74
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test7(self):
         src_node, dst_node = 19, 22
-        expected_waypoints = [19, 92, 27, 85, 31, 9, 22]
+        expected_path = [19, 92, 27, 85, 31, 9, 22]
         expected_distance = 60
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test8(self):
         src_node, dst_node = 28, 25
-        expected_waypoints = [28, 9, 22, 25]
+        expected_path = [28, 9, 22, 25]
         expected_distance = 57
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test9(self):
         src_node, dst_node = 82, 44
-        expected_waypoints = [82, 27, 65, 37, 72, 44]
+        expected_path = [82, 27, 65, 37, 72, 44]
         expected_distance = 87
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
     def test10(self):
         src_node, dst_node = 34, 49
-        expected_waypoints = [34, 68, 16, 94, 45, 49]
+        expected_path = [34, 68, 16, 94, 45, 49]
         expected_distance = 62
 
-        result = dijkstra(self.graph, src_node=src_node)
-        self.assertEqual(result.path_to(dst_node), expected_waypoints)
-        self.assertAlmostEqual(result.distance_to(dst_node), expected_distance)
+        path, distance = dijkstra(self.graph, src_node=src_node)
+        self.assertEqual(path[dst_node], expected_path)
+        self.assertAlmostEqual(distance[dst_node], expected_distance)
 
 
 _edges = [

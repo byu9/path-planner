@@ -3,28 +3,22 @@ from math import inf
 from .graphs import DiGraph
 
 
-class _ShortestPathResult:
-    def __init__(self, parents, distances):
-        self._parents = parents
-        self._distances = distances
+def _link_segments(end_node, segment_dict, reverse=False) -> list:
+    path = list()
 
-    def path_to(self, dst_node):
-        path = list()
-        iterator = dst_node
+    while end_node in segment_dict:
+        path.append(end_node)
 
-        while True:
-            path.append(iterator)
+        previous_link = segment_dict[end_node]
+        if end_node == previous_link:
+            break
 
-            if iterator == self._parents[iterator]:
-                break
+        end_node = previous_link
 
-            iterator = self._parents[iterator]
-
+    if reverse:
         path.reverse()
-        return path
 
-    def distance_to(self, dst_node):
-        return self._distances[dst_node]
+    return path
 
 
 def dijkstra(graph: DiGraph, src_node):
@@ -58,7 +52,12 @@ def dijkstra(graph: DiGraph, src_node):
                     distance_from_src[child] = new_distance
                     last_segment_from_src[child] = just_settled_node
 
-    return _ShortestPathResult(parents=from_src_via, distances=distance_from_src)
+    shortest_path = {
+        end_node: _link_segments(end_node, segment_dict=last_segment_from_src, reverse=True)
+        for end_node in last_segment_from_src
+    }
+
+    return shortest_path, distance_from_src
 
 
 def dijkstra_bidir(graph: DiGraph, src_node, dst_node):
