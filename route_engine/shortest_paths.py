@@ -28,33 +28,39 @@ class _ShortestPathResult:
 
 
 def dijkstra(graph: DiGraph, src_node):
-    # Stores the optimal distance from the source node terminating at a
-    # certain descendant node.
-    distances = {node: inf for node in graph.nodes}
-    distances[src_node] = 0.0
+    # Stores the optimal distance from the source node terminating at a certain descendant node.
+    distance_from_src = {node: inf for node in graph.nodes}
+    distance_from_src[src_node] = 0.0
 
     # Stores the parent in the shortest path terminating at a certain descendant node
-    parents = {src_node: src_node}
+    last_segment_from_src = {src_node: src_node}
 
-    unexplored_nodes = set(graph.nodes)
-    while unexplored_nodes:
+    nodes_to_settle = set(graph.nodes)
+    while nodes_to_settle:
 
-        # Evicts a node closest to the source to explore.
-        # Previously explored nodes are never explored again because they would have a shorter
-        # distance than the node currently being explored and all its children.
-        closest = min(unexplored_nodes, key=distances.get)
-        unexplored_nodes.remove(closest)
+        # The closest unsettled node is considered settled
+        just_settled_node = min(nodes_to_settle, key=distance_from_src.get)
+        nodes_to_settle.remove(just_settled_node)
 
-        # For each unexplored child, update the path if traveling through the current node
-        # to that child results in a smaller distance than previously recorded.
-        for child in graph.children_of(closest):
-            if child in unexplored_nodes:
+        # Visit children of the just settled node and update their paths if a better one is found.
+        for child in graph.children_of(just_settled_node):
+            if child in nodes_to_settle:
+                edge_weight = graph.weight_of(edge=(just_settled_node, child))
 
-                edge = (closest, child)
-                new_distance = distances[closest] + graph.weight_of(edge)
+                existing_distance = distance_from_src[child]
+                new_distance = distance_from_src[just_settled_node] + edge_weight
 
-                if new_distance < distances[child]:
-                    distances[child] = new_distance
-                    parents[child] = closest
+                if new_distance < existing_distance:
+                    distance_from_src[child] = new_distance
+                    last_segment_from_src[child] = just_settled_node
+
+    return _ShortestPathResult(parents=from_src_via, distances=distance_from_src)
+
+
+def dijkstra_bidir(graph: DiGraph, src_node, dst_node):
+    f_distances = {node: inf for node in graph.nodes}
+    b_distances = {node: inf for node in graph.nodes}
+    f_distances[src_node] = 0.0
+    b_distances[dst_node] = 0.0
 
     return _ShortestPathResult(parents=parents, distances=distances)
