@@ -35,18 +35,22 @@ def dijkstra(graph: DiGraph, src_node):
     # Stores the parent in the shortest path terminating at a certain descendant node
     last_segment_from_src = {src_node: src_node}
 
-    nodes_to_settle = set(graph.nodes)
+    settled_nodes = set()
+    nodes_to_settle = {src_node}
+
     while nodes_to_settle:
 
         # The closest unsettled node is considered settled
         just_settled_node = min(nodes_to_settle, key=distance_from_src.get)
         nodes_to_settle.remove(just_settled_node)
+        settled_nodes.add(just_settled_node)
 
         # Visit children of the just settled node and update their paths if a better one is found.
         for child in graph.children_of(just_settled_node):
-            if child in nodes_to_settle:
-                edge_weight = graph.weight_of(edge=(just_settled_node, child))
+            if child not in settled_nodes:
+                nodes_to_settle.add(child)
 
+                edge_weight = graph.weight_of(edge=(just_settled_node, child))
                 existing_distance = distance_from_src[child]
                 new_distance = distance_from_src[just_settled_node] + edge_weight
 
