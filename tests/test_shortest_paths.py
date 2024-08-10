@@ -2,6 +2,7 @@ import unittest
 
 from route_engine.graphs import DiGraph
 from route_engine.shortest_paths import dijkstra
+from route_engine.shortest_paths import dijkstra_bidir
 
 
 class TestDijkstra(unittest.TestCase):
@@ -101,6 +102,106 @@ class TestDijkstra(unittest.TestCase):
         path, distance = dijkstra(self.graph, src_node=src_node)
         self.assertEqual(path[dst_node], expected_path)
         self.assertAlmostEqual(distance[dst_node], expected_distance)
+
+
+class TestDijkstraBiDir(unittest.TestCase):
+
+    def setUp(self):
+        self.graph = DiGraph()
+
+        for src, dst, weight in _edges:
+            self.graph.insert_edge(src, dst, weight)
+
+    def test1(self):
+        src_node, dst_node = 69, 40
+        expected_path = [69, 75, 83, 23, 9, 22, 40]
+        expected_distance = 81
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test2(self):
+        src_node, dst_node = 10, 41
+        expected_path = [10, 98, 94, 45, 41]
+        expected_distance = 44
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test3(self):
+        src_node, dst_node = 98, 37
+        expected_path = [98, 87, 70, 26, 19, 92, 27, 65, 37]
+        expected_distance = 54
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test4(self):
+        src_node, dst_node = 88, 90
+        expected_path = [88, 90]
+        expected_distance = 15
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test5(self):
+        src_node, dst_node = 30, 55
+        expected_path = [30, 18, 48, 72, 97, 55]
+        expected_distance = 85
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test6(self):
+        src_node, dst_node = 32, 29
+        expected_path = [32, 95, 80, 34, 68, 29]
+        expected_distance = 74
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test7(self):
+        src_node, dst_node = 19, 22
+        expected_path = [19, 92, 27, 85, 31, 9, 22]
+        expected_distance = 60
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test8(self):
+        src_node, dst_node = 28, 25
+        expected_path = [28, 9, 22, 25]
+        expected_distance = 57
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test9(self):
+        src_node, dst_node = 82, 44
+        expected_path = [82, 27, 65, 37, 72, 44]
+        expected_distance = 87
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
+
+    def test10(self):
+        src_node, dst_node = 34, 49
+        expected_path = [34, 68, 16, 94, 45, 49]
+        expected_distance = 62
+
+        path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
+        self.assertEqual(path, expected_path)
+        self.assertAlmostEqual(distance, expected_distance)
 
 
 _edges = [
