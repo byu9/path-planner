@@ -1,8 +1,19 @@
 import unittest
+from math import inf
 
 from route_engine.graphs import DiGraph
 from route_engine.shortest_paths import dijkstra
 from route_engine.shortest_paths import dijkstra_bidir
+
+
+class TestDijkstraSimple(unittest.TestCase):
+    def testUnreachable(self):
+        graph = DiGraph()
+        graph.insert_edge('A', 'B', 1)
+        paths, distances = dijkstra(graph, src_node='B')
+
+        self.assertNotIn('A', paths)
+        self.assertEqual(distances['A'], inf)
 
 
 class TestDijkstra(unittest.TestCase):
@@ -203,6 +214,15 @@ class TestDijkstraBiDir(unittest.TestCase):
         path, distance = dijkstra_bidir(self.graph, src_node=src_node, dst_node=dst_node)
         self.assertEqual(path, expected_path)
         self.assertAlmostEqual(distance, expected_distance)
+
+
+class TestDijkstraBiDirSimple(unittest.TestCase):
+    def testUnreachable(self):
+        graph = DiGraph()
+        graph.insert_edge('A', 'B', 1)
+        result = dijkstra_bidir(graph, src_node='B', dst_node='A')
+
+        self.assertIsNone(result)
 
 
 _edges = [
