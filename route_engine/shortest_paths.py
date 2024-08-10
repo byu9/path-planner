@@ -23,41 +23,41 @@ def _link_segments(end_node, segment_dict, reverse=False) -> list:
 
 def dijkstra(graph: DiGraph, src_node):
     # Stores the optimal distance from the source node terminating at a certain descendant node.
-    distance_from_src = {node: inf for node in graph.nodes}
-    distance_from_src[src_node] = 0.0
+    distances = {node: inf for node in graph.nodes}
+    distances[src_node] = 0.0
 
     # Stores the parent in the shortest path terminating at a certain descendant node
-    last_segment_from_src = {src_node: src_node}
+    segments = {src_node: src_node}
 
-    settled_nodes = set()
-    nodes_to_settle = {src_node}
+    settled = set()
+    visited = {src_node}
 
-    while nodes_to_settle:
+    while visited:
 
         # The closest unsettled node is considered settled
-        just_settled_node = min(nodes_to_settle, key=distance_from_src.get)
-        nodes_to_settle.remove(just_settled_node)
-        settled_nodes.add(just_settled_node)
+        just_settled = min(visited, key=distances.get)
+        visited.remove(just_settled)
+        settled.add(just_settled)
 
         # Visit children of the just settled node and update their paths if a better one is found.
-        for child in graph.children_of(just_settled_node):
-            if child not in settled_nodes:
-                nodes_to_settle.add(child)
+        for child in graph.children_of(just_settled):
+            if child not in settled:
+                visited.add(child)
 
-                edge_weight = graph.weight_of(edge=(just_settled_node, child))
-                existing_distance = distance_from_src[child]
-                new_distance = distance_from_src[just_settled_node] + edge_weight
+                edge_weight = graph.weight_of(edge=(just_settled, child))
+                existing_distance = distances[child]
+                new_distance = distances[just_settled] + edge_weight
 
                 if new_distance < existing_distance:
-                    distance_from_src[child] = new_distance
-                    last_segment_from_src[child] = just_settled_node
+                    distances[child] = new_distance
+                    segments[child] = just_settled
 
     shortest_path = {
-        end_node: _link_segments(end_node, last_segment_from_src, reverse=True)
-        for end_node in last_segment_from_src
+        end_node: _link_segments(end_node, segments, reverse=True)
+        for end_node in segments
     }
 
-    shortest_path_distance = distance_from_src
+    shortest_path_distance = distances
     return shortest_path, shortest_path_distance
 
 
@@ -65,71 +65,81 @@ def dijkstra_bidir(graph: DiGraph, src_node, dst_node):
     # The bidirectional variant is similar to the uni-directional variant, but we search from
     # both sides, and terminate when the two fronts meet. The source front is expanding to
     # descendants, and the destination front is expanding to ancestors.
-    distance_from_src = {node: inf for node in graph.nodes}
-    distance_from_src[src_node] = 0.0
-    distance_to_dst = {node: inf for node in graph.nodes}
-    distance_to_dst[dst_node] = 0.0
+    distances_src = {node: inf for node in graph.nodes}
+    distances_src[src_node] = 0.0
 
-    last_segment_from_src = {src_node: src_node}
-    first_segment_to_dst = {dst_node: dst_node}
+    distances_dst = {node: inf for node in graph.nodes}
+    distances_dst[dst_node] = 0.0
 
-    settled_nodes_from_src = set()
-    nodes_to_settle_from_src = {src_node}
-    settled_nodes_to_dst = set()
-    nodes_to_settle_to_dst = {dst_node}
+    segments_src = {src_node: src_node}
+    segments_dst = {dst_node: dst_node}
 
-    while nodes_to_settle_from_src or nodes_to_settle_to_dst:
+    settled_src = set()
+    settled_dst = set()
 
-        just_settled_from_src = min(nodes_to_settle_from_src, key=distance_from_src.get)
-        just_settled_to_dst = min(nodes_to_settle_to_dst, key=distance_to_dst.get)
+    visited_src = {src_node}
+    visited_dst = {dst_node}
 
-        if distance_from_src[just_settled_from_src] < distance_to_dst[just_settled_to_dst]:
-            nodes_to_settle_from_src.remove(just_settled_from_src)
-            settled_nodes_from_src.add(just_settled_from_src)
+    while visited_src or visited_dst:
 
-            for child in graph.children_of(just_settled_from_src):
-                if child not in settled_nodes_from_src:
-                    nodes_to_settle_from_src.add(child)
+        just_settled_src = min(visited_src, key=distances_src.get)
+        just_settled_dst = min(visited_dst, key=distances_dst.get)
 
-                    edge_weight = graph.weight_of(edge=(just_settled_from_src, child))
-                    existing_distance = distance_from_src[child]
-                    new_distance = distance_from_src[just_settled_from_src] + edge_weight
+        visited_src.remove(just_settled_src)
+        visited_dst.remove(just_settled_dst)
 
-                    if new_distance < existing_distance:
-                        distance_from_src[child] = new_distance
-                        last_segment_from_src[child] = just_settled_from_src
-        else:
-            nodes_to_settle_to_dst.remove(just_settled_to_dst)
-            settled_nodes_to_dst.add(just_settled_to_dst)
+        settled_src.add(just_settled_src)
+        settled_dst.add(just_settled_dst)
 
-            for parent in graph.parents_of(just_settled_to_dst):
-                if parent not in settled_nodes_to_dst:
-                    nodes_to_settle_to_dst.add(parent)
-
-                    edge_weight = graph.weight_of(edge=(parent, just_settled_to_dst))
-                    existing_distance = distance_to_dst[parent]
-                    new_distance = distance_to_dst[just_settled_to_dst] + edge_weight
-
-                    if new_distance < existing_distance:
-                        distance_to_dst[parent] = new_distance
-                        first_segment_to_dst[parent] = just_settled_to_dst
-        # We stop if we find a node whose path is settled from both sides. However, the path
-        # connected by the meeting node may not be optimal, since it may be on the tip of a
-        # triangle where a direct shorter path exists between one of its parents and one of its
-        # children. To make sure the path is optimal, we also need to check all such connections.
-        if set.intersection(settled_nodes_from_src, settled_nodes_to_dst):
+        # We stop if we find a node whose path is settled from both sides, indicating that the
+        # two fronts have met. However, the path may not be optimal. After we break out of the
+        # loop, we need to keep searching among nodes visited by both sides.
+        if set.intersection(settled_src, settled_dst):
             break
 
-    visited_from_both_sides = set.intersection(
-        set.union(settled_nodes_from_src, nodes_to_settle_from_src),
-        set.union(settled_nodes_to_dst, nodes_to_settle_to_dst))
+        for child in graph.children_of(just_settled_src):
+            if child not in settled_src:
+                visited_src.add(child)
 
-    distances = {
-        u: distance_from_src[u] + distance_to_dst[u]
-        for u in visited_from_both_sides
+                edge_weight = graph.weight_of(edge=(just_settled_src, child))
+                existing_distance = distances_src[child]
+                new_distance = distances_src[just_settled_src] + edge_weight
+
+                if new_distance < existing_distance:
+                    distances_src[child] = new_distance
+                    segments_src[child] = just_settled_src
+
+        for parent in graph.parents_of(just_settled_dst):
+            if parent not in settled_dst:
+                visited_dst.add(parent)
+
+                edge_weight = graph.weight_of(edge=(parent, just_settled_dst))
+                existing_distance = distances_dst[parent]
+                new_distance = distances_dst[just_settled_dst] + edge_weight
+
+                if new_distance < existing_distance:
+                    distances_dst[parent] = new_distance
+                    segments_dst[parent] = just_settled_dst
+
+    overlapped_nodes = set.intersection(
+        set.union(settled_src, visited_src),
+        set.union(settled_dst, visited_dst)
+    )
+
+    overlapped_distances = {
+        node: distances_src[node] + distances_dst[node]
+        for node in overlapped_nodes
     }
 
-    best_node = min(distances, key=distances.get)
+    best_overlapped_node = min(overlapped_distances, key=overlapped_distances.get)
+    shortest_return_path = _link_segments(best_overlapped_node, segments_src, reverse=True)
+    shortest_forward_path = _link_segments(best_overlapped_node, segments_dst)
+
+    shortest_path = [*shortest_return_path[:-1], best_overlapped_node, *shortest_forward_path[1:]]
+    shortest_path_distance = overlapped_distances[best_overlapped_node]
+
+    return shortest_path, shortest_path_distance
+
 
     return_path = _link_segments(best_node, last_segment_from_src, reverse=True)
     forward_path = _link_segments(best_node, first_segment_to_dst)
