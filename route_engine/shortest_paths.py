@@ -1,3 +1,4 @@
+from itertools import product as cross_product
 from math import inf
 
 from .graphs import DiGraph
@@ -141,10 +142,26 @@ def dijkstra_bidir(graph: DiGraph, src_node, dst_node):
     return shortest_path, shortest_path_distance
 
 
-    return_path = _link_segments(best_node, last_segment_from_src, reverse=True)
-    forward_path = _link_segments(best_node, first_segment_to_dst)
+class ContractionRouter:
+    def __init__(self):
+        pass
 
-    path = [*return_path[:-1], best_node, *forward_path[1:]]
-    distance = distances[best_node]
+    def preprocess(self, graph, contraction_order):
+        for node in contraction_order:
+            self._contract(graph, node)
 
-    return path, distance
+    def shortest_path(self, src_node, dst_node):
+        pass
+
+    def _contract(self, graph, node):
+        parents = graph.parents_of(node)
+        children = graph.children_of(node)
+
+        for parent, child in cross_product(parents, children):
+            result = dijkstra_bidir(graph, parent, child)
+
+            if result is not None:
+                path, distance = result
+
+                if node in path:
+                    graph.add_shortcut(parent, child, distance)
