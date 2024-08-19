@@ -1,22 +1,17 @@
 import io
 
 import folium
-from PySide6.QtWebEngineWidgets import (
-    QWebEngineView,
-)
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-)
-from .query_provider import (
-    find_edge_geometry,
-)
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QMainWindow
+
+from .query_provider import get_node_geometry
 
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__()
         self.web_view = QWebEngineView()
         self.setCentralWidget(self.web_view)
         self.setMinimumSize(800, 600)
@@ -24,13 +19,13 @@ class MainWindow(QMainWindow):
 
         self._map = folium.Map(control_scale=True)
 
-    def plot_edge(self, u, v, key=0):
-        geometry = find_edge_geometry(u, v, key)
+    def plot_path(self, nodes: list):
+        geometries = [
+            get_node_geometry(node)
+            for node in nodes
+        ]
 
-        if geometry.empty:
-            raise LookupError(f'Geometry not found for edge {u, v, key}')
-
-        folium.GeoJson(geometry).add_to(self._map)
+        folium.PolyLine(geometries).add_to(self._map)
 
     def show(self):
         self._map.fit_bounds(self._map.get_bounds())
