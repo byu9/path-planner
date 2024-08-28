@@ -1,7 +1,6 @@
-from ._osmnx_wrapper import ox
 import osmnx.routing as ox_routing
-import osmnx.utils_graph as ox_utils_graph
 
+from ._osmnx_wrapper import ox
 from ._pickling import load_object
 
 _graph = load_object('gis_data/graph.pickle')
@@ -24,5 +23,5 @@ def get_shortest_path_between(src_node, dst_node):
 
 
 def get_path_metric(path, metric='length'):
-    gdf = ox_utils_graph.route_to_gdf(_graph, path, weight=metric)
+    gdf = ox_routing.route_to_gdf(_graph, path, weight=metric)
     return gdf['length'].sum()

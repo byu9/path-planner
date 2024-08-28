@@ -27,6 +27,10 @@ class MainWindow(QMainWindow):
 
         folium.PolyLine(geometries).add_to(self._map)
 
+    def plot_node(self, node):
+        location = get_node_geometry(node)
+        folium.CircleMarker(location=location, radius=2, weight=5).add_to(self._map)
+
     def show(self):
         self._map.fit_bounds(self._map.get_bounds())
         html_data = io.BytesIO()
