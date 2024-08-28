@@ -1,32 +1,73 @@
-from abc import ABCMeta
-from abc import abstractmethod
+from itertools import permutations
 from typing import Hashable
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
-
+import gis_backend.map_viewer as plt
 import gurobipy as gurobi
 
+from gis_backend.query_provider import get_node_at_address
+from gis_backend.query_provider import get_path_metric
+from gis_backend.query_provider import get_shortest_path_between
 
-class VehicleRoutingProblem(metaclass=ABCMeta):
+
+class VehicleRoutingProblem:
+
+    def __init__(self):
+        self._waypoints = set()
+        self._trips = set()
+        self._trip_costs = dict()
+        self._trip_geometries = dict()
+        self._num_vehicles = None
+
+    def __str__(self):
+        return (
+            f'Vehicle Routing Problem\nwith\n'
+            f' num_vehicles {self.num_vehicles}'
+            f' waypoints {self._waypoints}\n'
+            f' trips {self._trips}\n'
+            f' costs {self._trip_costs}'
+        )
+
+    @staticmethod
+    def from_addresses(waypoint_addresses: Iterable[str]):
+        problem = VehicleRoutingProblem()
+
+        problem._waypoints = [
+            get_node_at_address(address)
+            for address in waypoint_addresses
+        ]
+
+        problem._trips = list(permutations(problem._waypoints, 2))
+
+        problem._trip_geometries = dict()
+        for trip_start, trip_end in problem._trips:
+            path = get_shortest_path_between(trip_start, trip_end)
+            if path is not None:
+                problem._trip_geometries[trip_start, trip_end] = path
+
+        problem._trip_costs = {
+            trip: get_path_metric(path, metric='length')
+            for trip, path in problem._trip_geometries.items()
+        }
+
+        return problem
 
     @property
-    @abstractmethod
     def waypoints(self) -> Iterable[Hashable]:
         """
         Returns a list of waypoints.
         :return: Waypoints in the form of an iterable.
         """
-        raise NotImplementedError
+        return self._waypoints
 
     @property
-    @abstractmethod
     def trips(self) -> Iterable[Tuple[Hashable, Hashable]]:
         """
         Returns a list of trips.
         :return: Trips between a pair of waypoints (if they are connected) in the form of an iterable.
         """
-        raise NotImplementedError
+        return self._trips
 
     @property
     def depot(self) -> Hashable:
@@ -42,16 +83,19 @@ class VehicleRoutingProblem(metaclass=ABCMeta):
         Returns the number of vehicles in the depot.
         :return: The number of vehicles in the depot, if it is finite. Otherwise, None.
         """
-        return None
+        return self._num_vehicles
 
-    @abstractmethod
+    @num_vehicles.setter
+    def num_vehicles(self, value):
+        self._num_vehicles = value
+
     def trip_cost(self, trip: Tuple[Hashable, Hashable]) -> float:
         """
         Returns the cost of a trip.
         :param trip: A pair of connected waypoints in the form of a tuple
         :return: The cost of the trip in the form of a real number
         """
-        raise NotImplementedError
+        return self._trip_costs[trip]
 
     @property
     def num_waypoints(self):
@@ -61,11 +105,37 @@ class VehicleRoutingProblem(metaclass=ABCMeta):
     def is_unlimited_number_of_vehicles_kind(self):
         return self.num_vehicles is None
 
+    def plot_solution(self, solution):
+        for tour in solution.tours:
+            waypoints = tour[1:]
+            trip_start = waypoints[:-1]
+            trip_end = waypoints[1:]
+
+            trip_paths = [
+                self._trip_geometries[trip]
+                for trip in zip(trip_start, trip_end)
+            ]
+
+            fig = plt.figure()
+            for path in trip_paths:
+                fig.plot_path(path)
+
+            for node in self.waypoints:
+                fig.plot_node(node)
+
+        plt.show()
+
 
 class _VehicleRoutingProblemSolution:
     def __init__(self):
         self._parents = dict()
         self._leaves = set()
+
+    def __str__(self):
+        return (
+            f'Vehicle Routing Problem Solution'
+            f'with tours\n{self.tours}'
+        )
 
     @property
     def leaves(self):
@@ -169,6 +239,9 @@ class MixedIntegerSolver:
         )
 
         model.optimize()
+
+        if model.Status != gurobi.GRB.OPTIMAL:
+            raise RuntimeError(f'Model is infeasible.')
 
         def is_edge_enabled(edge_start, edge_end):
             return x[edge_start, edge_end].X > 0

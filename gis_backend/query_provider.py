@@ -1,13 +1,27 @@
-import geopandas as gpd
+import osmnx.routing as ox_routing
 
-_nodes = gpd.read_file('gis_database/simplified_nodes.geojson')
-_edges = gpd.read_file('gis_database/simplified_edges.geojson')
+from ._osmnx_wrapper import ox
+from ._pickling import load_object
+
+_graph = load_object('gis_data/graph.pickle')
+_nodes = load_object('gis_data/nodes.pickle')
+_edges = load_object('gis_data/edges.pickle')
 
 
-def find_edge_geometry(u, v, key=0):
-    rows = (
-        (_edges['u'] == u) &
-        (_edges['v'] == v) &
-        (_edges['key'] == key)
-    )
-    return _edges[rows]
+def get_node_at_address(address):
+    lat, long = ox.geocode(address)
+    return ox.nearest_nodes(_graph, X=long, Y=lat)
+
+
+def get_node_geometry(node):
+    point = _nodes['geometry'][node]
+    return point.y, point.x
+
+
+def get_shortest_path_between(src_node, dst_node):
+    return ox_routing.shortest_path(_graph, src_node, dst_node)
+
+
+def get_path_metric(path, metric='length'):
+    gdf = ox_routing.route_to_gdf(_graph, path, weight=metric)
+    return gdf['length'].sum()
