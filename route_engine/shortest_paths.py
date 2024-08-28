@@ -81,7 +81,7 @@ def dijkstra_bidir(graph: DiGraph, src_node, dst_node):
     visited_src = {src_node}
     visited_dst = {dst_node}
 
-    while visited_src or visited_dst:
+    while visited_src and visited_dst:
 
         just_settled_src = min(visited_src, key=distances_src.get)
         just_settled_dst = min(visited_dst, key=distances_dst.get)
@@ -127,41 +127,19 @@ def dijkstra_bidir(graph: DiGraph, src_node, dst_node):
         set.union(settled_dst, visited_dst)
     )
 
-    overlapped_distances = {
-        node: distances_src[node] + distances_dst[node]
-        for node in overlapped_nodes
-    }
+    if overlapped_nodes:
+        overlapped_distances = {
+            node: distances_src[node] + distances_dst[node]
+            for node in overlapped_nodes
+        }
 
-    best_overlapped_node = min(overlapped_distances, key=overlapped_distances.get)
-    shortest_return_path = _link_segments(best_overlapped_node, segments_src, reverse=True)
-    shortest_forward_path = _link_segments(best_overlapped_node, segments_dst)
+        best_overlapped_node = min(overlapped_distances, key=overlapped_distances.get)
+        shortest_return_path = _link_segments(best_overlapped_node, segments_src, reverse=True)
+        shortest_forward_path = _link_segments(best_overlapped_node, segments_dst)
 
-    shortest_path = [*shortest_return_path[:-1], best_overlapped_node, *shortest_forward_path[1:]]
-    shortest_path_distance = overlapped_distances[best_overlapped_node]
+        shortest_path = [
+            *shortest_return_path[:-1], best_overlapped_node, *shortest_forward_path[1:]
+        ]
+        shortest_path_distance = overlapped_distances[best_overlapped_node]
 
-    return shortest_path, shortest_path_distance
-
-
-class ContractionRouter:
-    def __init__(self):
-        pass
-
-    def preprocess(self, graph, contraction_order):
-        for node in contraction_order:
-            self._contract(graph, node)
-
-    def shortest_path(self, src_node, dst_node):
-        pass
-
-    def _contract(self, graph, node):
-        parents = graph.parents_of(node)
-        children = graph.children_of(node)
-
-        for parent, child in cross_product(parents, children):
-            result = dijkstra_bidir(graph, parent, child)
-
-            if result is not None:
-                path, distance = result
-
-                if node in path:
-                    graph.add_shortcut(parent, child, distance)
+        return shortest_path, shortest_path_distance
