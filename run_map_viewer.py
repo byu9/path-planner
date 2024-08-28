@@ -1,45 +1,23 @@
 import gis_backend.map_viewer as plt
+from gis_backend.query_provider import get_node_at_address
+from gis_backend.query_provider import get_path_metric
+from gis_backend.query_provider import get_shortest_path_between
+
+waypoints = [
+    '715 Nazareth St, Raleigh, NC 27606',
+    '1240 Farmers Market Dr, Raleigh, NC 27606',
+    '500 S Salisbury St, Raleigh, NC 27601',
+    '300 New Bern Ave, Raleigh NC 27610',
+    '2500 Glenwood Ave, Raleigh NC 27608'
+]
+
+node0 = get_node_at_address(waypoints[0])
+node1 = get_node_at_address(waypoints[1])
+
+path = get_shortest_path_between(node0, node1)
+print(path)
+print(get_path_metric(path, metric='length'))
 
 fig = plt.figure()
-fig.plot_edge(u=195398159, v=2438062189, key=0)
-fig.plot_edge(u=195576599, v=1439849141, key=0)
-fig.plot_edge(u=195576630, v=6504552922, key=0)
-fig.plot_edge(u=195576642, v=3586782264, key=0)
-fig.plot_edge(u=195576649, v=1141161166, key=0)
-fig.plot_edge(u=195576649, v=4170047023, key=0)
-fig.plot_edge(u=195576687, v=1439849208, key=0)
-fig.plot_edge(u=373185607, v=2428706433, key=0)
-fig.plot_edge(u=373185607, v=3586782260, key=0)
-fig.plot_edge(u=728732862, v=2438062188, key=0)
-fig.plot_edge(u=907505855, v=1141152753, key=0)
-fig.plot_edge(u=1141152702, v=195398159, key=0)
-fig.plot_edge(u=1141152722, v=1141152702, key=0)
-fig.plot_edge(u=1141152753, v=195576630, key=0)
-fig.plot_edge(u=1141161166, v=2426106951, key=0)
-fig.plot_edge(u=1141161166, v=195576649, key=0)
-fig.plot_edge(u=1439849141, v=728732862, key=0)
-fig.plot_edge(u=1439849208, v=195576692, key=0)
-fig.plot_edge(u=2380368380, v=7084506826, key=0)
-fig.plot_edge(u=2426106951, v=1141161166, key=0)
-fig.plot_edge(u=2426106951, v=5344855400, key=0)
-fig.plot_edge(u=2428706433, v=373185607, key=0)
-fig.plot_edge(u=2428706433, v=3586782256, key=0)
-fig.plot_edge(u=2438062188, v=2380368380, key=0)
-fig.plot_edge(u=2438062189, v=195576687, key=0)
-fig.plot_edge(u=3586782256, v=4170047022, key=0)
-fig.plot_edge(u=3586782256, v=2428706433, key=0)
-fig.plot_edge(u=3586782260, v=3586782261, key=0)
-fig.plot_edge(u=3586782260, v=373185607, key=0)
-fig.plot_edge(u=3586782261, v=3586782260, key=0)
-fig.plot_edge(u=3586782261, v=3586782264, key=0)
-fig.plot_edge(u=3586782264, v=3586782261, key=0)
-fig.plot_edge(u=3586782264, v=195576642, key=0)
-fig.plot_edge(u=4170047022, v=4170047023, key=0)
-fig.plot_edge(u=4170047022, v=3586782256, key=0)
-fig.plot_edge(u=4170047023, v=195576649, key=0)
-fig.plot_edge(u=4170047023, v=4170047022, key=0)
-fig.plot_edge(u=5344855400, v=1141152722, key=0)
-fig.plot_edge(u=6504552922, v=2426106951, key=0)
-fig.plot_edge(u=7084506826, v=907505855, key=0)
-
+fig.plot_path(path)
 plt.show()
