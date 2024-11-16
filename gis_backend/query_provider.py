@@ -8,14 +8,20 @@ _nodes = load_object('gis_data/nodes.pickle')
 _edges = load_object('gis_data/edges.pickle')
 
 
-def get_node_at_address(address):
-    lat, long = ox.geocode(address)
+def get_node_near_coord(lat, long):
     return ox.nearest_nodes(_graph, X=long, Y=lat)
 
 
-def get_node_geometry(node):
+def get_node_near_address(address):
+    lat, long = ox.geocode(address)
+    return get_node_near_coord(lat=lat, long=long)
+
+
+def get_coord_of_node(node):
     point = _nodes['geometry'][node]
-    return point.y, point.x
+    lat = point.y
+    long = point.x
+    return lat, long
 
 
 def get_shortest_path_between(src_node, dst_node):
