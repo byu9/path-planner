@@ -1,0 +1,50 @@
+[
+    {
+        "id": 100,
+        "depot_id": 224,
+        "vehicle_model": 219,
+        "organization_id": 1,
+        "effective_degradation": 0.3,
+        "operation_window": [
+            420,
+            1020
+        ],
+        "compatible_plugs": [
+            "CCS",
+            "Type2"
+        ],
+        "max_chg_rate": 115
+    },
+    {
+        "id": 101,
+        "depot_id": 224,
+        "vehicle_model": 219,
+        "organization_id": 1,
+        "effective_degradation": 0.3,
+        "operation_window": [
+            420,
+            1020
+        ],
+        "compatible_plugs": [
+            "CCS",
+            "Type2"
+        ],
+        "max_chg_rate": 115
+    },
+    {
+        "id": 102,
+        "depot_id": 224,
+        "vehicle_model": 219,
+        "organization_id": 1,
+        "effective_degradation": 0.3,
+        "operation_window": [
+            420,
+            1020
+        ],
+        "compatible_plugs": [
+            "CCS",
+            "Type2"
+        ],
+        "max_chg_rate": 115
+    }
+]

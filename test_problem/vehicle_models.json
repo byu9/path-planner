@@ -1,0 +1,15 @@
+[
+    {
+        "id": 219,
+        "model": "PU2-160",
+        "type": "5",
+        "size": "2a",
+        "battery_capacity": 160,
+        "min_soc": 10.0,
+        "max_soc": 95.0,
+        "passenger_capacity": 4,
+        "payload_capacity": 1500,
+        "volume_capacity": 1.0,
+        "distance_budget": 150
+    }
+]

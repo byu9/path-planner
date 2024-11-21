@@ -1,0 +1,20 @@
+[
+    {
+        "id": 224,
+        "name": "Depot1",
+        "address1": "1113 W Cabarrus St",
+        "address2": "",
+        "city": "Raleigh",
+        "zipcode": "27603",
+        "latitude": 35.775696,
+        "longitude": -78.656536,
+        "osm_node": null,
+        "project_id": 187,
+        "feeder_id": "",
+        "state_code": "NC",
+        "state": "North Carolina",
+        "country_code": "US",
+        "country": "United States",
+        "organization_id": 12
+    }
+]

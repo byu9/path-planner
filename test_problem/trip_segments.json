@@ -1,0 +1,150 @@
+[
+    {
+        "seg_id": 0,
+        "origin": {
+            "stop_id": 1000040,
+            "arrival_min": null,
+            "arrival_max": null,
+            "stop_duration": 10,
+            "passenger_add": 0,
+            "payload_add": 20,
+            "volume_add": 20,
+            "stop_type": 0,
+            "vehicle_on": true,
+            "PTO": false,
+            "door_open": [
+                9,
+                10
+            ],
+            "gateway_to": null,
+            "gateway_from": null
+        },
+        "destination": {
+            "stop_id": 1000044,
+            "arrival_min": 480,
+            "arrival_max": 720,
+            "stop_duration": 10,
+            "passenger_add": 0,
+            "payload_add": -20,
+            "volume_add": -20,
+            "stop_type": 1,
+            "vehicle_on": true,
+            "PTO": false,
+            "door_open": [
+                9,
+                10
+            ],
+            "gateway_to": null,
+            "gateway_from": null
+        },
+        "stops": [],
+        "uninterrupted": false,
+        "vehicle_model_required": null,
+        "vehicle_assigned": null
+    },
+    {
+        "seg_id": 0,
+        "origin": {
+            "stop_id": 1000040,
+            "arrival_min": null,
+            "arrival_max": null,
+            "stop_duration": 10,
+            "passenger_add": 0,
+            "payload_add": 50,
+            "volume_add": 50,
+            "stop_type": 0,
+            "vehicle_on": true,
+            "PTO": false,
+            "door_open": [
+                9,
+                10
+            ],
+            "gateway_to": null,
+            "gateway_from": null
+        },
+        "destination": {
+            "stop_id": 1000040,
+            "arrival_min": null,
+            "arrival_max": null,
+            "stop_duration": 10,
+            "passenger_add": 0,
+            "payload_add": -20,
+            "volume_add": -20,
+            "stop_type": 1,
+            "vehicle_on": true,
+            "PTO": false,
+            "door_open": [
+                9,
+                10
+            ],
+            "gateway_to": null,
+            "gateway_from": null
+        },
+        "stops": [
+            {
+                "stop_id": 1000041,
+                "arrival_min": 480,
+                "arrival_max": 720,
+                "stop_duration": 5,
+                "passenger_add": 0,
+                "payload_add": -20,
+                "volume_add": -20,
+                "vehicle_on": true,
+                "PTO": false,
+                "door_open": [
+                    9,
+                    10
+                ],
+                "stop_type": 1,
+                "precedes": [
+                    1000042
+                ],
+                "gateway_to": null,
+                "gateway_from": null
+            },
+            {
+                "stop_id": 1000042,
+                "arrival_min": 480,
+                "arrival_max": 720,
+                "stop_duration": 5,
+                "passenger_add": 0,
+                "payload_add": -20,
+                "volume_add": -20,
+                "stop_type": 1,
+                "vehicle_on": true,
+                "PTO": false,
+                "door_open": [
+                    9,
+                    10
+                ],
+                "precedes": [
+                    1000043
+                ],
+                "gateway_to": null,
+                "gateway_from": null
+            },
+            {
+                "stop_id": 1000043,
+                "arrival_min": 480,
+                "arrival_max": 720,
+                "stop_duration": 5,
+                "passenger_add": 0,
+                "payload_add": 10,
+                "volume_add": 10,
+                "stop_type": 2,
+                "vehicle_on": true,
+                "PTO": false,
+                "door_open": [
+                    9,
+                    10
+                ],
+                "precedes": [],
+                "gateway_to": null,
+                "gateway_from": null
+            }
+        ],
+        "uninterrupted": false,
+        "vehicle_model_required": null,
+        "vehicle_assigned": null
+    }
+]

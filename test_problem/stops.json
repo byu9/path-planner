@@ -1,0 +1,50 @@
+[
+    {
+        "id": 1000040,
+        "address": "715 Nazareth St, Raleigh, NC 27606",
+        "latitude": null,
+        "longitude": null,
+        "osm_node": null,
+        "chargers": []
+    },
+    {
+        "id": 1000041,
+        "address": "1240 Farmers Market Dr, Raleigh, NC 27606",
+        "latitude": null,
+        "longitude": null,
+        "osm_node": null,
+        "chargers": []
+    },
+    {
+        "id": 1000042,
+        "address": "500 S Salisbury St, Raleigh, NC 27601",
+        "latitude": null,
+        "longitude": null,
+        "osm_node": null,
+        "chargers": []
+    },
+    {
+        "id": 1000043,
+        "address": "2500 Glenwood Ave, Raleigh NC 27608",
+        "latitude": null,
+        "longitude": null,
+        "osm_node": null,
+        "chargers": []
+    },
+    {
+        "id": 1000044,
+        "address": "1315 Oakwood Ave, Raleigh, NC 27610",
+        "latitude": null,
+        "longitude": null,
+        "osm_node": null,
+        "chargers": []
+    },
+    {
+        "id": 1000045,
+        "address": "15 E Peace St, Raleigh, NC 27604",
+        "latitude": null,
+        "longitude": null,
+        "osm_node": null,
+        "chargers": []
+    }
+]
