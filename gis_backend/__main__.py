@@ -37,6 +37,9 @@ graph = ox.graph_from_place(
     simplify=False
 )
 
+graph = ox.add_edge_speeds(graph)
+graph = ox.add_edge_travel_times(graph)
+
 nodes, edges = ox.graph_to_gdfs(graph)
 
 save_object(graph, 'gis_data/graph.pickle')
