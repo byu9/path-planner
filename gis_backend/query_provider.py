@@ -23,5 +23,7 @@ def get_shortest_path_between(src_node, dst_node):
 
 
 def get_path_metric(path, metric='length'):
+    assert metric in ['length', 'travel_time']
+
     gdf = ox_routing.route_to_gdf(_graph, path, weight=metric)
-    return gdf['length'].sum()
+    return gdf[metric].sum()
