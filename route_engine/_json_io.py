@@ -31,7 +31,7 @@ class JSONStorageProvider:
         self._stops_filename = 'stops.json'
         self._segments_filename = 'trip_segments.json'
 
-    def load_problem(self, folder):
+    def load_problem(self, folder) -> VehicleRoutingProblem:
         depot_json = _load_json(f'{folder}/{self._depots_filename}')
         vehicle_json = _load_json(f'{folder}/{self._vehicles_filename}')
         vehicle_model_json = _load_json(f'{folder}/{self._vehicle_models_filename}')
@@ -60,6 +60,7 @@ class JSONStorageProvider:
             earliest_dispatch_time, latest_recall_time = vehicle_data['operation_window']
 
             vehicle_info = VehicleInfo(
+                depot=depot['name'],
                 dispatch_from_osm_node=depot['osm_node'],
                 recall_to_osm_node=depot['osm_node'],
                 fuel_capacity=vehicle_model['battery_capacity'],
@@ -68,7 +69,7 @@ class JSONStorageProvider:
                 latest_recall_time=latest_recall_time
             )
 
-            problem.add_vehicle(f'Vehicle-{vehicle_id}', info=vehicle_info)
+            problem.set_vehicle(f'Vehicle-{vehicle_id}', info=vehicle_info)
 
         # Scan the segments file to grab waypoint info
         list_of_stops_in_segment_file = list()
@@ -88,10 +89,10 @@ class JSONStorageProvider:
                     earliest_arrival_time=stop_in_segment_file['arrival_min'],
                     latest_arrival_time=stop_in_segment_file['arrival_max']
                 )
-                problem.add_waypoint(waypoint_name, waypoint_info)
+                problem.set_waypoint(waypoint_name, waypoint_info)
 
             else:
-                waypoint_info = problem.get_waypoint_info(waypoint_name)
+                waypoint_info = problem.waypoint(waypoint_name)
 
             # Accumulate the following quantities found in the segments file
             waypoint_info.cargo_demand += stop_in_segment_file['payload_add']
