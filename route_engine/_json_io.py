@@ -62,7 +62,7 @@ class JSONStorageProvider:
         for vehicle_id, vehicle_data in vehicle_data_by_id.items():
             depot = depot_data_by_id[vehicle_data['depot_id']]
             vehicle_model = vehicle_model_data_by_id[vehicle_data['vehicle_model']]
-            earliest_dispatch_time, latest_recall_time = vehicle_data['operation_window']
+            start_activity_after, finish_activity_before = vehicle_data['operation_window']
 
             vehicle_params = VehicleParams(
                 depot=depot['name'],
@@ -70,8 +70,8 @@ class JSONStorageProvider:
                 dispatch_from_gis_node=depot['dispatch_osm_node'],
                 recall_to_gis_node=depot['recall_osm_node'],
 
-                earliest_dispatch_time=earliest_dispatch_time,
-                latest_recall_time=latest_recall_time,
+                earliest_activity_hour=start_activity_after,
+                latest_activity_hour=finish_activity_before,
 
                 fuel_capacity=vehicle_model['battery_capacity'],
                 cargo_capacity=vehicle_model['payload_capacity'],
@@ -97,8 +97,8 @@ class JSONStorageProvider:
                     waypoint=waypoint_name,
                     gis_node=stop_data['osm_node'],
 
-                    earliest_arrival_time=stop_in_segment_file['arrival_min'],
-                    latest_arrival_time=stop_in_segment_file['arrival_max']
+                    earliest_arrival_hour=stop_in_segment_file['arrival_min'],
+                    latest_arrival_hour=stop_in_segment_file['arrival_max']
                 )
                 problem.add_waypoint(waypoint_name, waypoint_params)
 
@@ -107,6 +107,6 @@ class JSONStorageProvider:
 
             # Accumulate the following quantities found in the segments file
             waypoint_params.cargo_demand += stop_in_segment_file['payload_add']
-            waypoint_params.stop_duration += stop_in_segment_file['stop_duration']
+            waypoint_params.dwell_hours += stop_in_segment_file['stop_duration']
 
         return problem

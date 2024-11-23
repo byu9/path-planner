@@ -147,6 +147,125 @@ class GurobiTourPlanner:
             for i, j in problem.trips
         ), name='3.4-1b')
 
+        def _get_earliest_arrival_time(_waypoint):
+            time = problem.waypoint_params(_waypoint).earliest_arrival_hour
+            return time if time is not None else -gurobi.GRB.INFINITY
+
+        def _get_latest_arrival_time(_waypoint):
+            time = problem.waypoint_params(_waypoint).latest_arrival_hour
+            return time if time is not None else gurobi.GRB.INFINITY
+
+        def _get_earliest_activity_time(_vehicle):
+            time = problem.vehicle_params(_vehicle).earliest_activity_hour
+            return time if time is not None else -gurobi.GRB.INFINITY
+
+        def _get_latest_activity_time(_vehicle):
+            time = problem.vehicle_params(_vehicle).latest_activity_hour
+            return time if time is not None else gurobi.GRB.INFINITY
+
+        def _get_dispatch_duration(_vehicle, _waypoint):
+            return problem.dispatch_params(_vehicle, _waypoint).duration_hours
+
+        def _get_recall_duration(_vehicle, _waypoint):
+            return problem.recall_params(_vehicle, _waypoint).duration_hours
+
+        def _get_trip_duration(_trip):
+            return problem.trip_params(_trip).duration_hours
+
+        def _get_waypoint_dwell(_waypoint):
+            return problem.waypoint_params(_waypoint).dwell_hours
+
+        # Continuous decision variables
+        # The time each vehicle arrives at waypoint j
+        time_u = {
+            v: {
+                j: model.addVar(
+                    lb=_get_earliest_arrival_time(j),
+                    ub=_get_latest_arrival_time(j),
+                    name=f'time_u{v, j}'
+                )
+                for j in problem.waypoints
+            }
+            for v in problem.vehicles
+        }
+
+        # Continuous decision variables
+        # The time each vehicle departs from the departing facility of its depot.
+        time_s = {
+            v: model.addVar(
+                lb=_get_earliest_activity_time(v),
+                ub=_get_latest_activity_time(v),
+                name=f'time_s{v}'
+            )
+            for v in problem.vehicles
+        }
+
+        # Continuous decision variables
+        # The time each vehicle arrives at the arrival facility of its depot.
+        time_e = {
+            v: model.addVar(
+                lb=_get_earliest_activity_time(v),
+                ub=_get_latest_activity_time(v),
+                name=f'time_e{v}'
+            )
+            for v in problem.vehicles
+        }
+
+        # Cargo capacity constraints
+        # M-value is set to the sum of the absolute value of demands.
+        time_m = 5000
+
+        # Time window constraints
+        # The time on each vehicle must update as more waypoints are traveled.
+        # Uses the Big-M formulation for conditional equality.
+        model.addConstrs((
+            time_u[v][j] - time_u[v][i] <=
+            _get_trip_duration((i, j)) + _get_waypoint_dwell(i) + time_m * (1 - x[v][i, j])
+
+            for v in problem.vehicles
+            for i, j in problem.trips
+        ), name='3.5-1a')
+
+        model.addConstrs((
+            time_u[v][j] - time_u[v][i] >=
+            _get_trip_duration((i, j)) + _get_waypoint_dwell(i) - time_m * (1 - x[v][i, j])
+
+            for v in problem.vehicles
+            for i, j in problem.trips
+        ), name='3.5-1b')
+
+        model.addConstrs((
+            time_u[v][j] - time_s[v] <=
+            _get_dispatch_duration(v, j) + time_m * (1 - x_dispatch[v][j])
+
+            for v in problem.vehicles
+            for j in problem.waypoints
+        ), name='3.5-2a')
+
+        model.addConstrs((
+            time_u[v][j] - time_s[v] >=
+            _get_dispatch_duration(v, j) - time_m * (1 - x_dispatch[v][j])
+
+            for v in problem.vehicles
+            for j in problem.waypoints
+        ), name='3.5-2b')
+
+        model.addConstrs((
+            time_e[v] - time_u[v][j] <=
+            _get_recall_duration(v, j) + _get_waypoint_dwell(j) + time_m * (1 - x_recall[v][j])
+
+            for v in problem.vehicles
+            for j in problem.waypoints
+        ), name='3.5-3a')
+
+        model.addConstrs((
+            time_e[v] - time_u[v][j] >=
+            _get_recall_duration(v, j) + _get_waypoint_dwell(j) - time_m * (1 - x_recall[v][j])
+
+            for v in problem.vehicles
+            for j in problem.waypoints
+        ), name='3.5-3b')
+
         # Objective
         # The objective is to minimize the cost of tours, dispatching, and returning all vehicles
         # to all depots.
@@ -172,6 +291,12 @@ class GurobiTourPlanner:
                 capacity_u[v][j]
                 for v in problem.vehicles
                 for j in problem.waypoints
+            ) +
+
+            # Keep dispatch time as late as possible
+            -gurobi.quicksum(
+                time_s[v]
+                for v in problem.vehicles
             )
         )
 
@@ -190,6 +315,11 @@ class GurobiTourPlanner:
                     activity = TripActivity(
                         cargo_level=_get_gurobi_variable_value(capacity_u[vehicle][trip_end]),
                         cargo_to_drop_off=_get_cargo_demand(trip_end),
+                        scheduled_start_hour=(
+                                _get_gurobi_variable_value(time_u[vehicle][trip_start]) +
+                                _get_waypoint_dwell(trip_start)
+                        ),
+                        scheduled_end_hour=_get_gurobi_variable_value(time_u[vehicle][trip_end]),
                     )
                     solution.add_trip(vehicle, (trip_start, trip_end), activity)
 
@@ -200,6 +330,8 @@ class GurobiTourPlanner:
                     activity = DispatchActivity(
                         cargo_level=_get_gurobi_variable_value(capacity_u[vehicle][waypoint]),
                         cargo_to_drop_off=_get_cargo_demand(waypoint),
+                        scheduled_start_hour=_get_gurobi_variable_value(time_s[vehicle]),
+                        scheduled_end_hour=_get_gurobi_variable_value(time_u[vehicle][waypoint])
                     )
                     solution.add_dispatch(vehicle, waypoint, activity)
 
@@ -211,7 +343,12 @@ class GurobiTourPlanner:
                         cargo_level=(
                                 _get_gurobi_variable_value(capacity_u[vehicle][waypoint]) -
                                 _get_cargo_demand(waypoint)
-                        )
+                        ),
+                        scheduled_start_hour=(
+                                _get_gurobi_variable_value(time_u[vehicle][waypoint]) +
+                                _get_waypoint_dwell(waypoint)
+                        ),
+                        scheduled_end_hour=_get_gurobi_variable_value(time_e[vehicle]),
                     )
                     solution.add_recall(vehicle, waypoint, activity)
 

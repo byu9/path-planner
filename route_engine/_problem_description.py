@@ -21,8 +21,8 @@ class VehicleParams:
     dispatch_from_gis_node: GISNode | None = None
     recall_to_gis_node: GISNode | None = None
 
-    earliest_dispatch_time: float | None = None
-    latest_recall_time: float | None = None
+    earliest_activity_hour: float | None = None
+    latest_activity_hour: float | None = None
 
     fuel_capacity: float | None = None
     cargo_capacity: float | None = None
@@ -34,10 +34,10 @@ class WaypointParams:
     gis_node: GISNode
 
     cargo_demand: float = 0
-    stop_duration: float = 0
+    dwell_hours: float = 0
 
-    earliest_arrival_time: float | None = None
-    latest_arrival_time: float | None = None
+    earliest_arrival_hour: float | None = None
+    latest_arrival_hour: float | None = None
 
 
 @dataclass
@@ -46,7 +46,7 @@ class DispatchParams:
     target: Waypoint
 
     cost: float = 0
-    duration: float = 0
+    duration_hours: float = 0
     fuel_consumed: float = 0
 
     origin_gis_node: GISNode | None = None
@@ -59,7 +59,7 @@ class RecallParams:
     origin: Waypoint
 
     cost: float = 0
-    duration: float = 0
+    duration_hours: float = 0
     fuel_consumed: float = 0
 
     origin_gis_node: GISNode | None = None
@@ -72,7 +72,7 @@ class TripParams:
     target: Waypoint
 
     cost: float = 0
-    duration: float = 0
+    duration_hours: float = 0
     fuel_consumed: float = 0
 
     origin_gis_node: GISNode | None = None
@@ -179,7 +179,7 @@ class VehicleRoutingProblem:
                 origin=trip_start,
                 target=trip_end,
                 cost=get_path_metric(path, metric=metric),
-                duration=get_path_metric(path, metric='travel_time'),
+                duration_hours=get_path_metric(path, metric='travel_time'),
                 origin_gis_node=self._waypoints[trip_start].gis_node,
                 target_gis_node=self._waypoints[trip_end].gis_node,
             )
@@ -205,7 +205,7 @@ class VehicleRoutingProblem:
                     depot=vehicle_params.depot,
                     target=waypoint,
                     cost=get_path_metric(dispatch_path, metric=metric),
-                    duration=get_path_metric(dispatch_path, metric='travel_time'),
+                    duration_hours=get_path_metric(dispatch_path, metric='travel_time'),
                     origin_gis_node=vehicle_params.dispatch_from_gis_node,
                     target_gis_node=waypoint_params.gis_node
                 )
@@ -214,7 +214,7 @@ class VehicleRoutingProblem:
                     depot=vehicle_params.depot,
                     origin=waypoint,
                     cost=get_path_metric(recall_path, metric=metric),
-                    duration=get_path_metric(recall_path, metric='travel_time'),
+                    duration_hours=get_path_metric(recall_path, metric='travel_time'),
                     origin_gis_node=waypoint_params.gis_node,
                     target_gis_node=vehicle_params.recall_to_gis_node,
                 )
@@ -230,6 +230,8 @@ class VehicleRoutingProblem:
 class TripActivity:
     cargo_level: float
     cargo_to_drop_off: float
+    scheduled_start_hour: float
+    scheduled_end_hour: float
     fuel_level_at_origin: float = 0
 
     params: TripParams | None = None
@@ -239,6 +241,8 @@ class TripActivity:
 class DispatchActivity:
     cargo_level: float
     cargo_to_drop_off: float
+    scheduled_start_hour: float
+    scheduled_end_hour: float
     fuel_level_at_origin: float = 0
 
     params: DispatchParams | None = None
@@ -247,6 +251,8 @@ class DispatchActivity:
 @dataclass
 class RecallActivity:
     cargo_level: float
+    scheduled_start_hour: float
+    scheduled_end_hour: float
     fuel_level_at_origin: float = 0
 
     params: RecallParams | None = None
