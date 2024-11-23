@@ -19,16 +19,16 @@ else:
     with open(cached_problem_filename, 'wb') as file:
         pickle.dump(problem, file=file)
 
+with open('test_solution/debug_problem.txt', 'w') as file:
+    print(problem, file=file)
+
 gurobi_solver = GurobiTourPlanner({
     'LogToConsole': 1,
     'MIPFocus': 2,  # Focus on optimality
 })
 solution = gurobi_solver.solve(problem)
 
-plot_solution_to_file(solution, filename='test_solution/plot_solution.html')
-
-with open('test_solution/debug_problem.txt', 'w') as file:
-    print(problem, file=file)
-
 with open('test_solution/debug_solution.txt', 'w') as file:
     print(solution, file=file)
+
+plot_solution_to_file(solution, filename='test_solution/plot_solution.html')
