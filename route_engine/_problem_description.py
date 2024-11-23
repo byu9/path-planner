@@ -1,283 +1,336 @@
+from collections.abc import Hashable
+from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import permutations
 from pprint import pformat
-from typing import Hashable
-from typing import Iterable
-from typing import Optional
 
 from gis_backend.query_provider import get_path_metric
 from gis_backend.query_provider import get_shortest_path_between
 
+GISNode = Hashable
+Depot = Hashable
+Vehicle = Hashable
+Waypoint = Hashable
+Trip = tuple[Waypoint, Waypoint]
+
 
 @dataclass
 class VehicleParams:
-    depot: Hashable
-    dispatch_from_osm_node: Optional[Hashable] = None
-    recall_to_osm_node: Optional[Hashable] = None
-    fuel_capacity: Optional[float] = None
-    cargo_capacity: Optional[float] = None
-    earliest_dispatch_time: Optional[float] = None
-    latest_recall_time: Optional[float] = None
+    depot: Depot
+
+    dispatch_from_gis_node: GISNode | None = None
+    recall_to_gis_node: GISNode | None = None
+
+    earliest_dispatch_time: float | None = None
+    latest_recall_time: float | None = None
+
+    fuel_capacity: float | None = None
+    cargo_capacity: float | None = None
 
 
 @dataclass
 class WaypointParams:
-    osm_node: Hashable
+    waypoint: Waypoint
+    gis_node: GISNode
+
     cargo_demand: float = 0
-    earliest_arrival_time: Optional[float] = None
-    latest_arrival_time: Optional[float] = None
     stop_duration: float = 0
+
+    earliest_arrival_time: float | None = None
+    latest_arrival_time: float | None = None
+
+
+@dataclass
+class DispatchParams:
+    depot: Depot
+    target: Waypoint
+
+    cost: float = 0
+    duration: float = 0
+    fuel_consumed: float = 0
+
+    origin_gis_node: GISNode | None = None
+    target_gis_node: GISNode | None = None
+
+
+@dataclass
+class RecallParams:
+    depot: Depot
+    origin: Waypoint
+
+    cost: float = 0
+    duration: float = 0
+    fuel_consumed: float = 0
+
+    origin_gis_node: GISNode | None = None
+    target_gis_node: GISNode | None = None
+
+
+@dataclass
+class TripParams:
+    origin: Waypoint
+    target: Waypoint
+
+    cost: float = 0
+    duration: float = 0
+    fuel_consumed: float = 0
+
+    origin_gis_node: GISNode | None = None
+    target_gis_node: GISNode | None = None
 
 
 class VehicleRoutingProblem:
     def __init__(self):
         self._cost_metric = None
 
-        self._vehicles = dict()
-        self._waypoints = dict()
+        self._vehicles: dict[Vehicle, VehicleParams] = dict()
+        self._waypoints: dict[Waypoint, WaypointParams] = dict()
+        self._trips: dict[Trip, TripParams] = dict()
+        self._dispatches: dict[tuple[Vehicle, Waypoint], DispatchParams] = dict()
+        self._recalls: dict[tuple[Vehicle, Waypoint], RecallParams] = dict()
 
-        self._trips = set()
-        self._trip_costs = dict()
-
-        self._dispatch_costs = dict()
-        self._recall_costs = dict()
-
-        self._trip_geometries = dict()
-        self._dispatch_geometries = dict()
-        self._recall_geometries = dict()
+        self._trip_geometries: dict[Trip, list[GISNode]] = dict()
+        self._dispatch_geometries: dict[tuple[Vehicle, Waypoint], list[GISNode]] = dict()
+        self._recall_geometries: dict[tuple[Vehicle, Waypoint], list[GISNode]] = dict()
 
     def __str__(self):
         lines = list()
         lines.append('Vehicle Routing Problem')
-
         pretty_print_data = {
             'Cost metric': self._cost_metric,
-
             'Vehicles': self._vehicles,
             'Waypoints': self._waypoints,
-
-            'Trip costs': self._trip_costs,
-
-            'Dispatch costs': self._dispatch_costs,
-            'Recall costs': self._recall_costs,
+            'Trips': self._trips,
+            'Dispatches': self._dispatches,
+            'Recalls': self._recalls,
         }
         lines.append(pformat(pretty_print_data))
-
         return '\n'.join(lines)
 
-    def set_vehicle(self, name: Hashable, info: VehicleParams):
-        if name in self._vehicles:
-            raise ValueError(f'Cannot set vehicle: Vehicle "{name}" exists.')
+    def add_vehicle(self, vehicle: Vehicle, params: VehicleParams) -> None:
+        if vehicle in self._vehicles:
+            raise ValueError(f'Cannot add vehicle: Vehicle "{vehicle}" exists.')
+        self._vehicles[vehicle] = params
 
-        self._vehicles[name] = info
+    def add_waypoint(self, waypoint: Waypoint, params: WaypointParams) -> None:
+        if waypoint in self._waypoints:
+            raise ValueError(f'Cannot add waypoint: Waypoint "{waypoint}" exists.')
+        self._waypoints[waypoint] = params
 
-    def set_waypoint(self, name: Hashable, info: WaypointParams):
-        if name in self._waypoints:
-            raise ValueError(f'Cannot set waypoint: Waypoint "{name}" exists.')
+    def vehicle_params(self, vehicle: Vehicle) -> VehicleParams:
+        return self._vehicles[vehicle]
 
-        self._waypoints[name] = info
+    def waypoint_params(self, waypoint: Waypoint) -> WaypointParams:
+        return self._waypoints[waypoint]
 
-    def vehicle_params(self, name: Hashable) -> VehicleParams:
-        return self._vehicles[name]
+    def trip_params(self, trip: Trip) -> TripParams:
+        return self._trips[trip]
 
-    def waypoint_params(self, name: Hashable) -> WaypointParams:
-        return self._waypoints[name]
+    def dispatch_params(self, vehicle: Vehicle, waypoint: Waypoint) -> DispatchParams:
+        return self._dispatches[vehicle, waypoint]
 
-    def compile(self, metric):
-        self._cost_metric = metric
+    def recall_params(self, vehicle: Vehicle, waypoint: Waypoint) -> RecallParams:
+        return self._recalls[vehicle, waypoint]
 
-        for trip_start, trip_end in permutations(self._waypoints, r=2):
-            path = get_shortest_path_between(
-                self._waypoints[trip_start].osm_node,
-                self._waypoints[trip_end].osm_node
-            )
+    def dispatch_geometry(self, vehicle: Vehicle, waypoint: Waypoint) -> list[GISNode]:
+        return self._dispatch_geometries[vehicle, waypoint]
 
-            trip = trip_start, trip_end
+    def recall_geometry(self, vehicle: Vehicle, waypoint: Waypoint) -> list[GISNode]:
+        return self._recall_geometries[vehicle, waypoint]
 
-            self._trips.add(trip)
-            self._trip_geometries[trip] = path
-            self._trip_costs[trip] = get_path_metric(path, metric=metric)
-
-        for vehicle in self._vehicles:
-            for waypoint in self._waypoints:
-                dispatch_path = get_shortest_path_between(
-                    self._vehicles[vehicle].dispatch_from_osm_node,
-                    self._waypoints[waypoint].osm_node
-                )
-
-                recall_path = get_shortest_path_between(
-                    self._waypoints[waypoint].osm_node,
-                    self._vehicles[vehicle].recall_to_osm_node
-                )
-
-                self._dispatch_costs[vehicle, waypoint] = get_path_metric(dispatch_path, metric=metric)
-                self._recall_costs[vehicle, waypoint] = get_path_metric(recall_path, metric=metric)
-
-                self._dispatch_geometries[vehicle, waypoint] = dispatch_path
-                self._recall_geometries[vehicle, waypoint] = recall_path
+    def trip_geometry(self, trip: Trip) -> list[GISNode]:
+        return self._trip_geometries[trip]
 
     @property
-    def vehicles(self) -> Iterable[Hashable]:
+    def vehicles(self) -> Iterable[Vehicle]:
         return self._vehicles
 
     @property
-    def waypoints(self) -> list[Hashable]:
+    def waypoints(self) -> list[Waypoint]:
         return list(self._waypoints)
 
     @property
-    def trips(self) -> Iterable[tuple[Hashable, Hashable]]:
+    def trips(self) -> Iterable[Trip]:
         return self._trips
 
-    def trips_to(self, waypoint: Hashable) -> Iterable[tuple[Hashable, Hashable]]:
+    def trips_to(self, waypoint: Waypoint) -> Iterable[Trip]:
         for trip_from, trip_to in self.trips:
             if trip_to == waypoint:
                 yield trip_from, trip_to
 
-    def trips_from(self, waypoint: Hashable) -> Iterable[tuple[Hashable, Hashable]]:
+    def trips_from(self, waypoint: Waypoint) -> Iterable[Trip]:
         for trip_from, trip_to in self.trips:
             if trip_from == waypoint:
                 yield trip_from, trip_to
 
-    def trip_cost(self, trip: tuple[Hashable, Hashable]) -> float:
-        return self._trip_costs[trip]
+    def run_trip_planning(self, metric):
+        self._cost_metric = metric
 
-    def dispatch_cost(self, vehicle: Hashable, waypoint: Hashable) -> float:
-        return self._dispatch_costs[vehicle, waypoint]
+        for trip in permutations(self._waypoints, r=2):
+            trip_start, trip_end = trip
 
-    def recall_cost(self, vehicle: Hashable, waypoint: Hashable) -> float:
-        return self._recall_costs[vehicle, waypoint]
+            path = get_shortest_path_between(
+                self._waypoints[trip_start].gis_node,
+                self._waypoints[trip_end].gis_node,
+                metric=metric
+            )
 
-    def dispatch_geometry(self, vehicle: Hashable, waypoint: Hashable) -> list[Hashable]:
-        return self._dispatch_geometries[vehicle, waypoint]
+            trip_params = TripParams(
+                origin=trip_start,
+                target=trip_end,
+                cost=get_path_metric(path, metric=metric),
+                duration=get_path_metric(path, metric='travel_time'),
+                origin_gis_node=self._waypoints[trip_start].gis_node,
+                target_gis_node=self._waypoints[trip_end].gis_node,
+            )
 
-    def recall_geometry(self, vehicle: Hashable, waypoint: Hashable) -> list[Hashable]:
-        return self._recall_geometries[vehicle, waypoint]
+            self._trips[trip] = trip_params
+            self._trip_geometries[trip] = path
 
-    def trip_geometry(self, trip: tuple[Hashable, Hashable]) -> list[Hashable]:
-        return self._trip_geometries[trip]
+        for vehicle, vehicle_params in self._vehicles.items():
+            for waypoint, waypoint_params in self._waypoints.items():
+                dispatch_path = get_shortest_path_between(
+                    vehicle_params.dispatch_from_gis_node,
+                    waypoint_params.gis_node,
+                    metric=metric
+                )
+
+                recall_path = get_shortest_path_between(
+                    waypoint_params.gis_node,
+                    vehicle_params.recall_to_gis_node,
+                    metric=metric
+                )
+
+                dispatch_params = DispatchParams(
+                    depot=vehicle_params.depot,
+                    target=waypoint,
+                    cost=get_path_metric(dispatch_path, metric=metric),
+                    duration=get_path_metric(dispatch_path, metric='travel_time'),
+                    origin_gis_node=vehicle_params.dispatch_from_gis_node,
+                    target_gis_node=waypoint_params.gis_node
+                )
+
+                recall_params = RecallParams(
+                    depot=vehicle_params.depot,
+                    origin=waypoint,
+                    cost=get_path_metric(recall_path, metric=metric),
+                    duration=get_path_metric(recall_path, metric='travel_time'),
+                    origin_gis_node=waypoint_params.gis_node,
+                    target_gis_node=vehicle_params.recall_to_gis_node,
+                )
+
+                self._dispatches[vehicle, waypoint] = dispatch_params
+                self._recalls[vehicle, waypoint] = recall_params
+
+                self._dispatch_geometries[vehicle, waypoint] = dispatch_path
+                self._recall_geometries[vehicle, waypoint] = recall_path
 
 
 @dataclass
 class TripActivity:
-    trip: tuple[Hashable, Hashable]
     cargo_level: float
     cargo_to_drop_off: float
+    fuel_level_at_origin: float = 0
 
-    # To be filled using information in the problem
-    from_osm_node: Optional[Hashable] = None
-    to_osm_node: Optional[Hashable] = None
-    cost: Optional[float] = None
+    params: TripParams | None = None
 
 
 @dataclass
 class DispatchActivity:
-    target_waypoint: Hashable
     cargo_level: float
     cargo_to_drop_off: float
+    fuel_level_at_origin: float = 0
 
-    # To be filled using information in the problem
-    depot: Optional[Hashable] = None
-    from_osm_node: Optional[Hashable] = None
-    to_osm_node: Optional[Hashable] = None
-    cost: Optional[float] = None
+    params: DispatchParams | None = None
 
 
 @dataclass
 class RecallActivity:
-    origin_waypoint: Hashable
     cargo_level: float
+    fuel_level_at_origin: float = 0
 
-    # To be filled using information in the problem
-    depot: Optional[Hashable] = None
-    from_osm_node: Optional[Hashable] = None
-    to_osm_node: Optional[Hashable] = None
-    cost: Optional[float] = None
+    params: RecallParams | None = None
 
 
 class VehicleRoutingProblemSolution:
     def __init__(self, problem: VehicleRoutingProblem):
         self._problem = problem
 
-        self._vehicle_dispatches: dict[Hashable, DispatchActivity] = dict()
-        self._vehicle_recalls: dict[Hashable, RecallActivity] = dict()
-        self._vehicle_trips: dict[Hashable, list[TripActivity]] = {
-            vehicle: list()
+        self._dispatches: dict[Vehicle, DispatchActivity] = dict()
+        self._recalls: dict[Vehicle, RecallActivity] = dict()
+
+        self._trips: dict[Vehicle, dict[Trip, TripActivity]] = {
+            vehicle: dict()
             for vehicle in problem.vehicles
         }
 
     def __str__(self):
         lines = list()
         lines.append('Vehicle Routing Problem Solution')
-
         pretty_print_data = {
-            'Trips': self._vehicle_trips,
-            'Dispatches': self._vehicle_dispatches,
-            'Recalls': self._vehicle_recalls,
+            'Trips': {
+                vehicle: self.trip_activities(vehicle)
+                for vehicle in self.problem.vehicles
+            },
+            'Dispatches': {
+                vehicle: self.dispatch_activity(vehicle)
+                for vehicle in self.problem.vehicles
+            },
+            'Recalls': {
+                vehicle: self.recall_activity(vehicle)
+                for vehicle in self.problem.vehicles
+            },
         }
         lines.append(pformat(pretty_print_data))
-
         return '\n'.join(lines)
 
     @property
     def problem(self) -> VehicleRoutingProblem:
         return self._problem
 
-    def add_dispatch(self, vehicle: Hashable, activity: DispatchActivity):
-        if vehicle in self._vehicle_dispatches:
-            raise ValueError(f'Error setting vehicle dispatch: {vehicle} already set.')
+    def add_dispatch(self, vehicle: Vehicle, waypoint: Waypoint, activity: DispatchActivity):
+        if vehicle in self._dispatches:
+            raise ValueError(f'Error setting vehicle dispatch: {vehicle} already has dispatch.')
+        activity.params = self.problem.dispatch_params(vehicle, waypoint)
+        self._dispatches[vehicle] = activity
 
-        self._vehicle_dispatches[vehicle] = activity
+    def add_recall(self, vehicle: Vehicle, waypoint: Waypoint, activity: RecallActivity):
+        if vehicle in self._recalls:
+            raise ValueError(f'Error setting vehicle recall: {vehicle} already has recall.')
+        activity.params = self.problem.recall_params(vehicle, waypoint)
+        self._recalls[vehicle] = activity
 
-    def add_recall(self, vehicle: Hashable, activity: RecallActivity):
-        if vehicle in self._vehicle_recalls:
-            raise ValueError(f'Error setting vehicle recall: {vehicle} already set.')
+    def add_trip(self, vehicle: Vehicle, trip: Trip, activity: TripActivity):
+        if trip in self._trips[vehicle]:
+            raise ValueError(
+                f'Error setting trip: {trip} already has exists for vehicle {vehicle}.')
+        activity.params = self.problem.trip_params(trip)
+        self._trips[vehicle][trip] = activity
 
-        self._vehicle_recalls[vehicle] = activity
+    def dispatch_activity(self, vehicle: Vehicle) -> DispatchActivity | None:
+        return self._dispatches.get(vehicle, None)
 
-    def add_trip(self, vehicle: Hashable, activity: TripActivity):
-        self._vehicle_trips[vehicle].append(activity)
+    def recall_activity(self, vehicle: Vehicle) -> RecallActivity | None:
+        return self._recalls.get(vehicle, None)
 
-    def compile(self):
-        for vehicle in self._problem.vehicles:
-            self._sort_trips(vehicle)
+    def trip_activities(self, vehicle: Vehicle) -> list[TripActivity]:
+        """
+        Returns trips in sorted order
+        :param vehicle: vehicle whose trips are to be returned
+        :return: trip activities in sorted order
+        """
+        if not self._trips[vehicle]:
+            return list()
 
-        for vehicle, activity in self._vehicle_dispatches.items():
-            activity.from_osm_node = self._problem.vehicle_params(vehicle).dispatch_from_osm_node
-            activity.to_osm_node = self._problem.waypoint_params(activity.target_waypoint).osm_node
-            activity.cost = self._problem.dispatch_cost(vehicle, activity.target_waypoint)
-            activity.depot = self._problem.vehicle_params(vehicle).depot
-
-        for vehicle, activity in self._vehicle_recalls.items():
-            activity.from_osm_node = self._problem.waypoint_params(activity.origin_waypoint).osm_node
-            activity.to_osm_node = self._problem.vehicle_params(vehicle).recall_to_osm_node
-            activity.cost = self._problem.recall_cost(vehicle, activity.origin_waypoint)
-            activity.depot = self._problem.vehicle_params(vehicle).depot
-
-        for vehicle, trips in self._vehicle_trips.items():
-            for trip_data in trips:
-                trip_start, trip_end = trip_data.trip
-                trip_data.from_osm_node = self._problem.waypoint_params(trip_start).osm_node
-                trip_data.to_osm_node = self._problem.waypoint_params(trip_end).osm_node
-                trip_data.cost = self._problem.trip_cost((trip_start, trip_end))
-
-    def _sort_trips(self, vehicle):
-        if not self._vehicle_trips[vehicle]:
-            return
-
-        next_waypoint = dict()  # trip_start: trip_end
-        for trip_data in self._vehicle_trips[vehicle]:
-            trip_start, trip_end = trip_data.trip
+        next_waypoint: dict[Waypoint: Waypoint] = dict()
+        for trip_start, trip_end in self._trips[vehicle]:
             next_waypoint[trip_start] = trip_end
             next_waypoint[trip_end] = next_waypoint.get(trip_end, None)
 
         parentless_waypoints = set(next_waypoint.keys()) - set(next_waypoint.values())
         if len(parentless_waypoints) != 1:
-            raise ValueError(f'Unable to sort trips: multiple parentless waypoints {parentless_waypoints}.')
-
-        trip_data_by_trip = {
-            trip_data.trip: trip_data
-            for trip_data in self._vehicle_trips[vehicle]
-        }
+            raise ValueError(
+                f'Unable to sort trips: multiple parentless waypoints {parentless_waypoints}.')
 
         first_waypoint, = parentless_waypoints
         waypoint_order = list()
@@ -288,17 +341,8 @@ class VehicleRoutingProblemSolution:
             waypoint = next_waypoint[waypoint]
 
         sorted_trips = [
-            trip_data_by_trip[trip]
+            self._trips[vehicle][trip]
             for trip in zip(waypoint_order[:-1], waypoint_order[1:])
         ]
 
-        self._vehicle_trips[vehicle] = sorted_trips
-
-    def trip_activity(self, vehicle: Hashable) -> list[TripActivity]:
-        return self._vehicle_trips[vehicle]
-
-    def dispatch_activity(self, vehicle: Hashable) -> DispatchActivity:
-        return self._vehicle_dispatches.get(vehicle, None)
-
-    def recall_activity(self, vehicle: Hashable) -> RecallActivity:
-        return self._vehicle_recalls.get(vehicle, None)
+        return sorted_trips
