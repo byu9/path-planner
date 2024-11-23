@@ -3,7 +3,7 @@ from pathlib import Path
 
 from route_engine import GurobiTourPlanner
 from route_engine import JSONStorageProvider
-from route_engine import RoutePlotter
+from route_engine import plot_solution_to_file
 
 cached_problem_filename = Path('test_solution/cached_problem.pickle')
 
@@ -14,7 +14,7 @@ if cached_problem_filename.exists():
 else:
     json_provider = JSONStorageProvider()
     problem = json_provider.load_problem(folder='test_problem')
-    problem.compile(metric='travel_time')
+    problem.run_trip_planning(metric='travel_time')
 
     with open(cached_problem_filename, 'wb') as file:
         pickle.dump(problem, file=file)
@@ -25,8 +25,7 @@ gurobi_solver = GurobiTourPlanner({
 })
 solution = gurobi_solver.solve(problem)
 
-plotter = RoutePlotter()
-plotter.plot_solution_to_file(solution, filename='test_solution/plot_solution.html')
+plot_solution_to_file(solution, filename='test_solution/plot_solution.html')
 
 with open('test_solution/debug_problem.txt', 'w') as file:
     print(problem, file=file)
