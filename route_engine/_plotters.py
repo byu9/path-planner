@@ -7,7 +7,7 @@ from ._problem_description import VehicleRoutingProblemSolution
 
 
 def _pretty_print_for_popup(obj):
-    return pformat(obj, width=80)
+    return pformat(obj, width=30)
 
 
 def _get_coord_of_nodes(nodes):
@@ -53,6 +53,7 @@ class RoutePlotter:
                     get_coord_of_node(dispatch_activity.from_osm_node),
                     tooltip='Dispatch facility',
                     icon=folium.Icon(icon='home'),
+                    popup=_pretty_print_for_popup(problem.vehicle(vehicle)),
                     color='red',
                 ).add_to(vehicle_layer)
 
@@ -68,6 +69,7 @@ class RoutePlotter:
                     get_coord_of_node(recall_activity.to_osm_node),
                     tooltip='Recall facility',
                     icon=folium.Icon(icon='home'),
+                    popup=_pretty_print_for_popup(problem.vehicle(vehicle)),
                     color='green',
                 ).add_to(vehicle_layer)
 
