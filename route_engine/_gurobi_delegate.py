@@ -42,7 +42,8 @@ class GurobiTourPlanner:
         }
 
         # Binary decision variables
-        # A value of 1 indicates the vehicle is dispatched to the waypoint at the beginning of its tour.
+        # A value of 1 indicates the vehicle is dispatched to the waypoint at the beginning of its
+        # tour.
         x_dispatch = {
             v: {j: model.addVar(vtype=gurobi.GRB.BINARY, name=f'x_{v, j}') for j in
                 problem.waypoints}
@@ -135,19 +136,20 @@ class GurobiTourPlanner:
         # Conditional equality using Big-M formulation
         model.addConstrs((
             capacity_u[v][i] - capacity_u[v][j] <= _get_cargo_demand(i) + capacity_m * (
-                        1 - x[v][i, j])
+                    1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
         ), name='3.4-1a')
         model.addConstrs((
             capacity_u[v][i] - capacity_u[v][j] >= _get_cargo_demand(i) - capacity_m * (
-                        1 - x[v][i, j])
+                    1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
         ), name='3.4-1b')
 
         # Objective
-        # The objective is to minimize the cost of tours, dispatching, and returning all vehicles to all depots.
+        # The objective is to minimize the cost of tours, dispatching, and returning all vehicles
+        # to all depots.
         model.setObjective(
             gurobi.quicksum(
                 problem.trip_params(ij).cost * x[v][ij]
