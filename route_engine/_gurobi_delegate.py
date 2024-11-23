@@ -18,7 +18,8 @@ def _get_gurobi_variable_value(gurobi_var):
 
 
 class GurobiTourPlanner:
-    def __init__(self, gurobi_params: Optional[dict] = None, infeasible_filename: str = 'infeasible.ilp'):
+    def __init__(self, gurobi_params: Optional[dict] = None,
+                 infeasible_filename: str = 'infeasible.ilp'):
         if gurobi_params is None:
             gurobi_params = dict()
 
@@ -43,14 +44,16 @@ class GurobiTourPlanner:
         # Binary decision variables
         # A value of 1 indicates the vehicle is dispatched to the waypoint at the beginning of its tour.
         x_dispatch = {
-            v: {j: model.addVar(vtype=gurobi.GRB.BINARY, name=f'x_{v, j}') for j in problem.waypoints}
+            v: {j: model.addVar(vtype=gurobi.GRB.BINARY, name=f'x_{v, j}') for j in
+                problem.waypoints}
             for v in problem.vehicles
         }
 
         # Binary decision variables
         # A value of 1 indicates the vehicle is recalled from the waypoint at the end of its tour.
         x_recall = {
-            v: {j: model.addVar(vtype=gurobi.GRB.BINARY, name=f'x_{j, v}') for j in problem.waypoints}
+            v: {j: model.addVar(vtype=gurobi.GRB.BINARY, name=f'x_{j, v}') for j in
+                problem.waypoints}
             for v in problem.vehicles
         }
 
@@ -91,7 +94,8 @@ class GurobiTourPlanner:
         # Accumulated Miller-Tucker-Zemlin demand
         subtour_u = {
             v: {
-                j: model.addVar(vtype=gurobi.GRB.CONTINUOUS, lb=1, ub=num_waypoints, name=f'subtour_u_{v, j}')
+                j: model.addVar(vtype=gurobi.GRB.CONTINUOUS, lb=1, ub=num_waypoints,
+                                name=f'subtour_u_{v, j}')
                 for j in problem.waypoints
             }
             for v in problem.vehicles
@@ -130,12 +134,14 @@ class GurobiTourPlanner:
         # Cargo capacity constraints
         # Conditional equality using Big-M formulation
         model.addConstrs((
-            capacity_u[v][i] - capacity_u[v][j] <= _get_cargo_demand(i) + capacity_m * (1 - x[v][i, j])
+            capacity_u[v][i] - capacity_u[v][j] <= _get_cargo_demand(i) + capacity_m * (
+                        1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
         ), name='3.3-1a')
         model.addConstrs((
-            capacity_u[v][i] - capacity_u[v][j] >= _get_cargo_demand(i) - capacity_m * (1 - x[v][i, j])
+            capacity_u[v][i] - capacity_u[v][j] >= _get_cargo_demand(i) - capacity_m * (
+                        1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
         ), name='3.3-1b')
@@ -144,17 +150,17 @@ class GurobiTourPlanner:
         # The objective is to minimize the cost of tours, dispatching, and returning all vehicles to all depots.
         model.setObjective(
             gurobi.quicksum(
-                problem.trip_cost(ij) * x[v][ij]
+                problem.trip_params(ij).cost * x[v][ij]
                 for v in problem.vehicles
                 for ij in problem.trips
             ) +
             gurobi.quicksum(
-                problem.dispatch_cost(v, j) * x_dispatch[v][j]
+                problem.dispatch_params(v, j).cost * x_dispatch[v][j]
                 for v in problem.vehicles
                 for j in problem.waypoints
             ) +
             gurobi.quicksum(
-                problem.recall_cost(v, j) * x_recall[v][j]
+                problem.recall_params(v, j).cost * x_recall[v][j]
                 for v in problem.vehicles
                 for j in problem.waypoints
             ) +
@@ -180,36 +186,31 @@ class GurobiTourPlanner:
             for trip_start, trip_end in problem.trips:
                 if _is_gurobi_binary_variable_set(x[vehicle][trip_start, trip_end]):
                     activity = TripActivity(
-                        trip=(trip_start, trip_end),
                         cargo_level=_get_gurobi_variable_value(capacity_u[vehicle][trip_end]),
                         cargo_to_drop_off=_get_cargo_demand(trip_end),
                     )
-                    solution.add_trip(vehicle, activity)
+                    solution.add_trip(vehicle, (trip_start, trip_end), activity)
 
         # Scan for enabled dispatching edges
         for vehicle in problem.vehicles:
             for waypoint in problem.waypoints:
                 if _is_gurobi_binary_variable_set(x_dispatch[vehicle][waypoint]):
                     activity = DispatchActivity(
-                        target_waypoint=waypoint,
                         cargo_level=_get_gurobi_variable_value(capacity_u[vehicle][waypoint]),
                         cargo_to_drop_off=_get_cargo_demand(waypoint),
                     )
-                    solution.add_dispatch(vehicle, activity)
+                    solution.add_dispatch(vehicle, waypoint, activity)
 
         # Scan for enabled recall edges
         for vehicle in problem.vehicles:
             for waypoint in problem.waypoints:
                 if _is_gurobi_binary_variable_set(x_recall[vehicle][waypoint]):
                     activity = RecallActivity(
-                        origin_waypoint=waypoint,
                         cargo_level=(
                                 _get_gurobi_variable_value(capacity_u[vehicle][waypoint]) -
                                 _get_cargo_demand(waypoint)
                         )
                     )
-                    solution.add_recall(vehicle, activity)
-
-        solution.compile()
+                    solution.add_recall(vehicle, waypoint, activity)
 
         return solution
