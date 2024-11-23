@@ -14,7 +14,6 @@ include_highways = [
     'primary',
     'secondary',
     'tertiary',
-    'unclassified',
     'residential',
     'motorway_link',
     'trunk_link',
@@ -24,10 +23,22 @@ include_highways = [
     'living_street',
     'service',
 ]
+include_highways = '|'.join(include_highways)
+
+# https://wiki.openstreetmap.org/wiki/Key:access
+exclude_accesses = [
+    'no',
+    'private',
+    'unknown'
+]
+exclude_accesses = '|'.join(exclude_accesses)
 
 # Uses the OSM overpass query syntax
 # https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#The_Query_Filter
-custom_filter = '["highway"~"' + '|'.join(include_highways) + '"]'
+custom_filter = (
+    f'["highway"~"{include_highways}"]'
+    f'["access"!~"{exclude_accesses}"]'
+)
 
 graph = ox.graph_from_place(
     args.fetch_place,
