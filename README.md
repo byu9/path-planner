@@ -2,6 +2,8 @@
 
 ## Python Dependencies
 
+Python >= 3.10 is required
+
 Install using `pip` as follows.
 
 ```commandline

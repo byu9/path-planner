@@ -1,9 +1,5 @@
 osmnx
-pyside6
 folium
 networkx
 gurobipy
-shapely
 scikit-learn
-geopy
-requests-cache
