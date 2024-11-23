@@ -138,13 +138,13 @@ class GurobiTourPlanner:
                         1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
-        ), name='3.3-1a')
+        ), name='3.4-1a')
         model.addConstrs((
             capacity_u[v][i] - capacity_u[v][j] >= _get_cargo_demand(i) - capacity_m * (
                         1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
-        ), name='3.3-1b')
+        ), name='3.4-1b')
 
         # Objective
         # The objective is to minimize the cost of tours, dispatching, and returning all vehicles to all depots.
