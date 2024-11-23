@@ -8,6 +8,10 @@ _nodes = load_object('gis_data/nodes.pickle')
 _edges = load_object('gis_data/edges.pickle')
 
 
+def _seconds_to_hours(sec):
+    return sec / 60 / 60
+
+
 def get_node_near_coord(lat, long):
     return ox.nearest_nodes(_graph, X=long, Y=lat)
 
@@ -32,4 +36,5 @@ def get_path_metric(path, metric='length'):
     assert metric in ['length', 'travel_time']
 
     gdf = ox_routing.route_to_gdf(_graph, path, weight=metric)
-    return gdf[metric].sum()
+    result = gdf[metric].sum()
+    return _seconds_to_hours(result) if metric == 'travel_time' else result
