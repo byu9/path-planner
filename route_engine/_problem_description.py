@@ -10,7 +10,7 @@ from gis_backend.query_provider import get_shortest_path_between
 
 
 @dataclass
-class VehicleInfo:
+class VehicleParams:
     depot: Hashable
     dispatch_from_osm_node: Optional[Hashable] = None
     recall_to_osm_node: Optional[Hashable] = None
@@ -21,7 +21,7 @@ class VehicleInfo:
 
 
 @dataclass
-class WaypointInfo:
+class WaypointParams:
     osm_node: Hashable
     cargo_demand: float = 0
     earliest_arrival_time: Optional[float] = None
@@ -65,25 +65,25 @@ class VehicleRoutingProblem:
 
         return '\n'.join(lines)
 
-    def set_vehicle(self, name: Hashable, info: VehicleInfo):
+    def set_vehicle(self, name: Hashable, info: VehicleParams):
         if name in self._vehicles:
             raise ValueError(f'Cannot set vehicle: Vehicle "{name}" exists.')
 
         self._vehicles[name] = info
 
-    def set_waypoint(self, name: Hashable, info: WaypointInfo):
+    def set_waypoint(self, name: Hashable, info: WaypointParams):
         if name in self._waypoints:
             raise ValueError(f'Cannot set waypoint: Waypoint "{name}" exists.')
 
         self._waypoints[name] = info
 
-    def vehicle(self, name: Hashable) -> VehicleInfo:
+    def vehicle_params(self, name: Hashable) -> VehicleParams:
         return self._vehicles[name]
 
-    def waypoint(self, name: Hashable) -> WaypointInfo:
+    def waypoint_params(self, name: Hashable) -> WaypointParams:
         return self._waypoints[name]
 
-    def compute_costs(self, metric):
+    def compile(self, metric):
         self._cost_metric = metric
 
         for trip_start, trip_end in permutations(self._waypoints, r=2):
@@ -242,22 +242,22 @@ class VehicleRoutingProblemSolution:
             self._sort_trips(vehicle)
 
         for vehicle, activity in self._vehicle_dispatches.items():
-            activity.from_osm_node = self._problem.vehicle(vehicle).dispatch_from_osm_node
-            activity.to_osm_node = self._problem.waypoint(activity.target_waypoint).osm_node
+            activity.from_osm_node = self._problem.vehicle_params(vehicle).dispatch_from_osm_node
+            activity.to_osm_node = self._problem.waypoint_params(activity.target_waypoint).osm_node
             activity.cost = self._problem.dispatch_cost(vehicle, activity.target_waypoint)
-            activity.depot = self._problem.vehicle(vehicle).depot
+            activity.depot = self._problem.vehicle_params(vehicle).depot
 
         for vehicle, activity in self._vehicle_recalls.items():
-            activity.from_osm_node = self._problem.waypoint(activity.origin_waypoint).osm_node
-            activity.to_osm_node = self._problem.vehicle(vehicle).recall_to_osm_node
+            activity.from_osm_node = self._problem.waypoint_params(activity.origin_waypoint).osm_node
+            activity.to_osm_node = self._problem.vehicle_params(vehicle).recall_to_osm_node
             activity.cost = self._problem.recall_cost(vehicle, activity.origin_waypoint)
-            activity.depot = self._problem.vehicle(vehicle).depot
+            activity.depot = self._problem.vehicle_params(vehicle).depot
 
         for vehicle, trips in self._vehicle_trips.items():
             for trip_data in trips:
                 trip_start, trip_end = trip_data.trip
-                trip_data.from_osm_node = self._problem.waypoint(trip_start).osm_node
-                trip_data.to_osm_node = self._problem.waypoint(trip_end).osm_node
+                trip_data.from_osm_node = self._problem.waypoint_params(trip_start).osm_node
+                trip_data.to_osm_node = self._problem.waypoint_params(trip_end).osm_node
                 trip_data.cost = self._problem.trip_cost((trip_start, trip_end))
 
     def _sort_trips(self, vehicle):
@@ -302,63 +302,3 @@ class VehicleRoutingProblemSolution:
 
     def recall_activity(self, vehicle: Hashable) -> RecallActivity:
         return self._vehicle_recalls.get(vehicle, None)
-
-    #
-    # def add_trip_to_tour(self, vehicle: Hashable, trip: tuple[Hashable, Hashable]):
-    #     trip_start, trip_end = trip
-    #     next_waypoints = self._next_waypoints[vehicle]
-    #
-    #     if next_waypoints.get(trip_start, None) is not None:
-    #         raise ValueError(f'Error adding {trip}: existing trip with identical trip start.')
-    #
-    #     next_waypoints[trip_start] = trip_end
-    #     if trip_end not in next_waypoints:
-    #         next_waypoints[trip_end] = None
-    #
-
-    #
-    # tour = list()
-    # waypoint = first_waypoint
-    # while waypoint is not None:
-    #     tour.append(waypoint)
-    #     waypoint = next_waypoints[waypoint]
-    #
-    # last_waypoint = tour[-1]
-    #
-    # if vehicle in self._dispatches:
-    #     dispatch_target = self._dispatches[vehicle].target
-    #
-    #     # If vehicle is dispatched, the first waypoint should be the dispatch target
-    #     if dispatch_target != first_waypoint:
-    #         raise ValueError(
-    #             f'Unable to get tour of {vehicle}: disagreeing dispatch target: '
-    #             f'{first_waypoint} vs {dispatch_target}.'
-    #         )
-    #
-    # # If vehicle is recalled, the last waypoint should be the recall origin
-    # if vehicle in self._recalls:
-    #     recall_origin = self._recalls[vehicle].origin
-    #     if last_waypoint != recall_origin:
-    #         raise ValueError(
-    #             f'Unable to get tour of {vehicle}: disagreeing recall origin: '
-    #             f'{last_waypoint} vs {recall_origin}.'
-    #         )
-    #
-    # return tour
-    #
-    # def get_tour_geometry(self, vehicle: Hashable) -> list[Hashable]:
-    #     geometry = list()
-    #
-    #     if vehicle in self._dispatches:
-    #         dispatch_target = self._dispatches[vehicle].target
-    #         geometry.extend(self._problem.get_dispatch_geometry(vehicle, dispatch_target))
-    #
-    #     tour = self.get_tour(vehicle)
-    #     for trip_start, trip_end in zip(tour[:-1], tour[1:]):
-    #         geometry.extend(self._problem.get_trip_geometry((trip_start, trip_end)))
-    #
-    #     if vehicle in self._recalls:
-    #         recall_origin = self._recalls[vehicle].origin
-    #         geometry.extend(self._problem.get_recall_geometry(vehicle, recall_origin))
-    #
-    #     return geometry

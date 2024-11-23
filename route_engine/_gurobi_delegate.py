@@ -1,3 +1,5 @@
+from typing import Optional
+
 import gurobipy as gurobi
 
 from . import VehicleRoutingProblemSolution
@@ -16,8 +18,12 @@ def _get_gurobi_variable_value(gurobi_var):
 
 
 class GurobiTourPlanner:
-    def __init__(self, gurobi_params: dict):
+    def __init__(self, gurobi_params: Optional[dict] = None, infeasible_filename: str = 'infeasible.ilp'):
+        if gurobi_params is None:
+            gurobi_params = dict()
+
         self._gurobi_params = gurobi_params
+        self._infeasible_filename = infeasible_filename
 
     def solve(self, problem: VehicleRoutingProblem):
         num_waypoints = len(problem.waypoints)
@@ -100,11 +106,11 @@ class GurobiTourPlanner:
         ), name='3.3-1')
 
         def _get_cargo_capacity(_vehicle):
-            capacity = problem.vehicle(_vehicle).cargo_capacity
+            capacity = problem.vehicle_params(_vehicle).cargo_capacity
             return capacity if capacity is not None else gurobi.GRB.INFINITY
 
         def _get_cargo_demand(_waypoint):
-            demand = problem.waypoint(_waypoint).cargo_demand
+            demand = problem.waypoint_params(_waypoint).cargo_demand
             return demand
 
         # Non-negative continuous decision variables
@@ -164,7 +170,7 @@ class GurobiTourPlanner:
         model.optimize()
         if model.Status != gurobi.GRB.OPTIMAL:
             model.computeIIS()
-            model.write('iismodel.ilp')
+            model.write(self._infeasible_filename)
             raise RuntimeError(f'Model is infeasible.')
 
         solution = VehicleRoutingProblemSolution(problem=problem)
@@ -198,8 +204,8 @@ class GurobiTourPlanner:
                     activity = RecallActivity(
                         origin_waypoint=waypoint,
                         cargo_level=(
-                            _get_gurobi_variable_value(capacity_u[vehicle][waypoint]) -
-                            _get_cargo_demand(waypoint)
+                                _get_gurobi_variable_value(capacity_u[vehicle][waypoint]) -
+                                _get_cargo_demand(waypoint)
                         )
                     )
                     solution.add_recall(vehicle, activity)

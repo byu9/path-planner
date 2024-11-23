@@ -26,10 +26,10 @@ class RoutePlotter:
 
         # Plot waypoints
         for waypoint in problem.waypoints:
-            waypoint_data = problem.waypoint(waypoint)
+            waypoint_params = problem.waypoint_params(waypoint)
             folium.Marker(
-                get_coord_of_node(waypoint_data.osm_node),
-                popup=_pretty_print_for_popup(waypoint_data)
+                get_coord_of_node(waypoint_params.osm_node),
+                popup=_pretty_print_for_popup(waypoint_params)
             ).add_to(folium_map)
 
         for vehicle in problem.vehicles:
@@ -53,7 +53,7 @@ class RoutePlotter:
                     get_coord_of_node(dispatch_activity.from_osm_node),
                     tooltip='Dispatch facility',
                     icon=folium.Icon(icon='home'),
-                    popup=_pretty_print_for_popup(problem.vehicle(vehicle)),
+                    popup=_pretty_print_for_popup(problem.vehicle_params(vehicle)),
                     color='red',
                 ).add_to(vehicle_layer)
 
@@ -69,7 +69,7 @@ class RoutePlotter:
                     get_coord_of_node(recall_activity.to_osm_node),
                     tooltip='Recall facility',
                     icon=folium.Icon(icon='home'),
-                    popup=_pretty_print_for_popup(problem.vehicle(vehicle)),
+                    popup=_pretty_print_for_popup(problem.vehicle_params(vehicle)),
                     color='green',
                 ).add_to(vehicle_layer)
 
