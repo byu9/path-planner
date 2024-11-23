@@ -24,8 +24,8 @@ def get_coord_of_node(node):
     return lat, long
 
 
-def get_shortest_path_between(src_node, dst_node):
-    return ox_routing.shortest_path(_graph, src_node, dst_node)
+def get_shortest_path_between(src_node, dst_node, metric='length'):
+    return ox_routing.shortest_path(_graph, src_node, dst_node, weight=metric)
 
 
 def get_path_metric(path, metric='length'):
