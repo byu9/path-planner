@@ -54,7 +54,7 @@ class RoutePlotter:
                     tooltip='Dispatch facility',
                     icon=folium.Icon(icon='home'),
                     color='red',
-                ).add_to(folium_map)
+                ).add_to(vehicle_layer)
 
                 nodes = problem.dispatch_geometry(vehicle, dispatch_activity.target_waypoint)
                 folium.PolyLine(
@@ -69,7 +69,7 @@ class RoutePlotter:
                     tooltip='Recall facility',
                     icon=folium.Icon(icon='home'),
                     color='green',
-                ).add_to(folium_map)
+                ).add_to(vehicle_layer)
 
                 nodes = problem.recall_geometry(vehicle, recall_activity.origin_waypoint)
                 folium.PolyLine(
