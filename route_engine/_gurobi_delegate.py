@@ -118,7 +118,7 @@ class GurobiTourPlanner:
             return demand
 
         # Non-negative continuous decision variables
-        # The amount of cargo on a vehicle upto and including waypoint
+        # The amount of cargo en route to waypoint
         capacity_u = {
             v: {
                 j: model.addVar(lb=0, ub=_get_cargo_capacity(v), name=f'capacity_u{v, j}')
