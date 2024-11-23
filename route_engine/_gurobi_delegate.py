@@ -211,9 +211,17 @@ class GurobiTourPlanner:
             for v in problem.vehicles
         }
 
-        # Cargo capacity constraints
-        # M-value is set to the sum of the absolute value of demands.
-        time_m = 5000
+        # Time window constraints
+        # M-value is set to the sum of all the time delays.
+        time_m = (
+                sum(
+                    _get_dispatch_duration(v, j) + _get_recall_duration(v, j)
+                    for v in problem.vehicles
+                    for j in problem.waypoints
+                ) +
+                sum(_get_waypoint_dwell(j) for j in problem.waypoints) +
+                sum(_get_trip_duration(trip) for trip in problem.trips)
+        )
 
         # Time window constraints
         # The time on each vehicle must update as more waypoints are traveled.
