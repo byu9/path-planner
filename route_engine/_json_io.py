@@ -1,7 +1,7 @@
 import json
-from typing import Dict
-from typing import Hashable
-from typing import Iterable
+from collections.abc import Hashable
+from collections.abc import Iterable
+from typing import Any
 
 from gis_backend.query_provider import get_node_near_address
 from gis_backend.query_provider import get_node_near_coord
@@ -15,7 +15,7 @@ def _load_json(filename):
         return json.load(file)
 
 
-def _reindex_by_primary_key(records: Iterable[Dict], key: Hashable):
+def _reindex_by_primary_key(records: Iterable[dict[Hashable, Any]], key: Hashable):
     keyed_records = {
         item[key]: item
         for item in records
@@ -49,7 +49,8 @@ class JSONStorageProvider:
                 lat=depot_data['latitude'],
                 long=depot_data['longitude']
             )
-            depot_data['recall_osm_node'] = get_node_near_address('303 Ashe Ave Raleigh, NC 27606 United States')
+            depot_data['recall_osm_node'] = get_node_near_address(
+                '303 Ashe Ave Raleigh, NC 27606 United States')
 
         # Fixup stop data fields
         for stop_id, stop_data in stop_data_by_id.items():
@@ -63,17 +64,20 @@ class JSONStorageProvider:
             vehicle_model = vehicle_model_data_by_id[vehicle_data['vehicle_model']]
             earliest_dispatch_time, latest_recall_time = vehicle_data['operation_window']
 
-            params = VehicleParams(
+            vehicle_params = VehicleParams(
                 depot=depot['name'],
-                dispatch_from_osm_node=depot['dispatch_osm_node'],
-                recall_to_osm_node=depot['recall_osm_node'],
+
+                dispatch_from_gis_node=depot['dispatch_osm_node'],
+                recall_to_gis_node=depot['recall_osm_node'],
+
+                earliest_dispatch_time=earliest_dispatch_time,
+                latest_recall_time=latest_recall_time,
+
                 fuel_capacity=vehicle_model['battery_capacity'],
                 cargo_capacity=vehicle_model['payload_capacity'],
-                earliest_dispatch_time=earliest_dispatch_time,
-                latest_recall_time=latest_recall_time
             )
 
-            problem.set_vehicle(f'Vehicle-{vehicle_id}', info=params)
+            problem.add_vehicle(f'Vehicle-{vehicle_id}', vehicle_params)
 
         # Scan the segments file to grab waypoint info
         list_of_stops_in_segment_file = list()
@@ -88,18 +92,21 @@ class JSONStorageProvider:
             waypoint_name = f'Waypoint-{stop_id}'
 
             if waypoint_name not in problem.waypoints:
-                params = WaypointParams(
-                    osm_node=stop_data['osm_node'],
+
+                waypoint_params = WaypointParams(
+                    waypoint=waypoint_name,
+                    gis_node=stop_data['osm_node'],
+
                     earliest_arrival_time=stop_in_segment_file['arrival_min'],
                     latest_arrival_time=stop_in_segment_file['arrival_max']
                 )
-                problem.set_waypoint(waypoint_name, params)
+                problem.add_waypoint(waypoint_name, waypoint_params)
 
             else:
-                params = problem.waypoint_params(waypoint_name)
+                waypoint_params = problem.waypoint_params(waypoint_name)
 
             # Accumulate the following quantities found in the segments file
-            params.cargo_demand += stop_in_segment_file['payload_add']
-            params.stop_duration += stop_in_segment_file['stop_duration']
+            waypoint_params.cargo_demand += stop_in_segment_file['payload_add']
+            waypoint_params.stop_duration += stop_in_segment_file['stop_duration']
 
         return problem
