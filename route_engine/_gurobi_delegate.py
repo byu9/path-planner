@@ -135,17 +135,22 @@ class GurobiTourPlanner:
         # Cargo capacity constraints
         # Conditional equality using Big-M formulation
         model.addConstrs((
-            capacity_u[v][i] - capacity_u[v][j] <= _get_cargo_demand(i) + capacity_m * (
+            capacity_u[v][i] - capacity_u[v][j] <= _get_cargo_demand(j) + capacity_m * (
                     1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
         ), name='3.4-1a')
         model.addConstrs((
-            capacity_u[v][i] - capacity_u[v][j] >= _get_cargo_demand(i) - capacity_m * (
+            capacity_u[v][i] - capacity_u[v][j] >= _get_cargo_demand(j) - capacity_m * (
                     1 - x[v][i, j])
             for v in problem.vehicles
             for i, j in problem.trips
         ), name='3.4-1b')
+        model.addConstrs((
+            capacity_u[v][j] >= _get_cargo_demand(j)
+            for v in problem.vehicles
+            for j in problem.waypoints
+        ), name='3.4-1c')
 
         def _get_earliest_arrival_time(_waypoint):
             time = problem.waypoint_params(_waypoint).earliest_arrival_hour
