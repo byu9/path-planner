@@ -18,11 +18,11 @@ Trip = tuple[Waypoint, Waypoint]
 class VehicleParams:
     depot: Depot
 
+    latest_activity_hour: float
+    earliest_activity_hour: float | None = None
+
     dispatch_from_gis_node: GISNode | None = None
     recall_to_gis_node: GISNode | None = None
-
-    earliest_activity_hour: float | None = None
-    latest_activity_hour: float | None = None
 
     fuel_capacity: float | None = None
     cargo_capacity: float | None = None
